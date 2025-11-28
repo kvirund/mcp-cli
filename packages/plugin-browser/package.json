@@ -1,0 +1,36 @@
+{
+  "name": "@anthropic/mcp-cli-plugin-browser",
+  "version": "0.1.0",
+  "description": "Browser automation plugin for MCP CLI via Chrome DevTools Protocol",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@anthropic/mcp-cli-core": "*",
+    "chrome-remote-interface": "^0.33.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2",
+    "rimraf": "^6.0.1"
+  },
+  "peerDependencies": {
+    "@anthropic/mcp-cli-core": ">=0.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
