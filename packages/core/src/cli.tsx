@@ -7,7 +7,7 @@ import { render } from 'ink';
 import { Command } from 'commander';
 import { App } from './App.js';
 import { PluginManager } from './plugin/manager.js';
-import { loadConfig, normalizeConfig } from './config.js';
+import { loadConfig, normalizeConfig, DEFAULT_MCP_PORT } from './config.js';
 import { startStdioServer } from './mcp/server.js';
 import { startSseServer, stopSseServer } from './mcp/sse-transport.js';
 
@@ -45,6 +45,7 @@ program
       <App
         pluginManager={pluginManager}
         welcomeMessage="Welcome to MCP CLI. Type 'help' for available commands."
+        config={config}
       />
     );
 
@@ -59,7 +60,7 @@ program
   .command('serve')
   .description('Start MCP server')
   .option('-m, --mode <mode>', 'Server mode: stdio or sse', 'stdio')
-  .option('-p, --port <port>', 'SSE server port', '3000')
+  .option('-p, --port <port>', 'SSE server port (default: from config or 3000)')
   .option('--plugin <plugins...>', 'Plugins to load')
   .action(async (options) => {
     const config = await loadConfig();
@@ -88,7 +89,7 @@ program
         pluginManager,
       });
     } else if (options.mode === 'sse') {
-      const port = parseInt(options.port, 10);
+      const port = options.port ? parseInt(options.port, 10) : (config.mcp?.port ?? DEFAULT_MCP_PORT);
       console.error(`Starting MCP server in SSE mode on port ${port}...`);
       await startSseServer({
         port,

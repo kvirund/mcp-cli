@@ -18,9 +18,16 @@ export type PluginEntry =
       config?: Record<string, unknown>;
     };
 
+export interface McpConfig {
+  port?: number;
+}
+
 export interface Config {
   plugins: PluginEntry[];
+  mcp?: McpConfig;
 }
+
+export const DEFAULT_MCP_PORT = 3000;
 
 /**
  * Normalized config with plugin configs extracted

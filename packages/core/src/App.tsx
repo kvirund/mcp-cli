@@ -8,15 +8,18 @@ import { StatusBar, History, CommandInput } from './components/index.js';
 import { useAppState } from './state.js';
 import { commandRegistry, registerBuiltinCommands, setMcpStatusCallback } from './commands/index.js';
 import { startSseServer } from './mcp/sse-transport.js';
+import { DEFAULT_MCP_PORT } from './config.js';
 import type { PluginManager } from './plugin/manager.js';
+import type { Config } from './config.js';
 import type { McpStatus } from './types.js';
 
 interface AppProps {
   pluginManager: PluginManager;
   welcomeMessage?: string;
+  config?: Config;
 }
 
-export function App({ pluginManager, welcomeMessage }: AppProps) {
+export function App({ pluginManager, welcomeMessage, config }: AppProps) {
   const { history, mcp, addHistory, setMcp, clearHistory, setTerminalWidth } = useAppState();
   const { exit } = useApp();
   const { stdout } = useStdout();
@@ -50,8 +53,8 @@ export function App({ pluginManager, welcomeMessage }: AppProps) {
       });
     });
 
-    // Auto-start MCP server on port 3100
-    const port = 3100;
+    // Auto-start MCP server
+    const port = config?.mcp?.port ?? DEFAULT_MCP_PORT;
     startSseServer({
       port,
       name: 'mcp-cli',

@@ -6,6 +6,7 @@ import type { Command, CommandResult, AppState } from './types.js';
 import type { PluginManager } from '../plugin/manager.js';
 import { commandRegistry } from './registry.js';
 import { startSseServer, stopSseServer, getSseServer } from '../mcp/sse-transport.js';
+import { DEFAULT_MCP_PORT } from '../config.js';
 
 // Store reference to pluginManager for serve command
 let _pluginManager: PluginManager | null = null;
@@ -178,7 +179,7 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     args: [
       {
         name: 'port',
-        description: 'Port number (default: 3100)',
+        description: `Port number (default: ${DEFAULT_MCP_PORT})`,
         required: false,
       },
     ],
@@ -192,7 +193,7 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
         };
       }
 
-      const port = args[0] ? parseInt(args[0], 10) : 3100;
+      const port = args[0] ? parseInt(args[0], 10) : DEFAULT_MCP_PORT;
       if (isNaN(port) || port < 1 || port > 65535) {
         return {
           output: 'Invalid port number',

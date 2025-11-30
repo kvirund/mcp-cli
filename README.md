@@ -69,11 +69,11 @@ mcp-cli serve --mode sse --port 3000
 
 ## MCP Server
 
-MCP SSE server starts automatically on port 3100 when CLI launches. Use `serve <port>` to restart on a different port.
+MCP SSE server starts automatically on port 3000 (configurable) when CLI launches. Use `serve <port>` to restart on a different port.
 
 Endpoints:
-- SSE: `http://localhost:3100/sse`
-- Health: `http://localhost:3100/health`
+- SSE: `http://localhost:3000/sse`
+- Health: `http://localhost:3000/health`
 
 ## Configuration
 
@@ -81,6 +81,9 @@ Config file: `~/.mcp-cli/config.json`
 
 ```json
 {
+  "mcp": {
+    "port": 3000
+  },
   "plugins": [
     "@anthropic/mcp-cli-plugin-browser",
     {
@@ -92,6 +95,13 @@ Config file: `~/.mcp-cli/config.json`
   ]
 }
 ```
+
+### Configuration Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `mcp.port` | `3000` | Default port for MCP SSE server |
+| `plugins` | `[]` | List of plugins to load |
 
 ## Plugins
 
