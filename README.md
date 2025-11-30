@@ -34,10 +34,69 @@ npm run build
 npm run dev
 ```
 
+## Usage
+
+### Interactive Mode
+
+```bash
+# Start interactive CLI
+mcp-cli
+
+# With specific plugins
+mcp-cli -p @anthropic/mcp-cli-plugin-browser
+```
+
+### Server Mode
+
+```bash
+# Start as stdio server (for Claude Desktop, etc.)
+mcp-cli serve
+
+# Start as SSE server
+mcp-cli serve --mode sse --port 3000
+```
+
+## Commands
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `help [topic]` | `?`, `h` | Show help for commands or plugins |
+| `plugins [action] [name]` | `plugin`, `pl` | Manage plugins (list, enable, disable) |
+| `serve [port]` | `mcp` | Start MCP SSE server |
+| `stop` | | Stop MCP SSE server |
+| `clear` | `cls` | Clear screen |
+| `exit` | `quit`, `q` | Exit CLI |
+
+## MCP Server
+
+MCP SSE server starts automatically on port 3100 when CLI launches. Use `serve <port>` to restart on a different port.
+
+Endpoints:
+- SSE: `http://localhost:3100/sse`
+- Health: `http://localhost:3100/health`
+
+## Configuration
+
+Config file: `~/.mcp-cli/config.json`
+
+```json
+{
+  "plugins": [
+    "@anthropic/mcp-cli-plugin-browser",
+    {
+      "name": "@anthropic/mcp-cli-plugin-nasa-apod",
+      "config": {
+        "apiKey": "your-nasa-api-key"
+      }
+    }
+  ]
+}
+```
+
 ## Plugins
 
-The CLI uses a modular plugin architecture. Each plugin extends the core functionality:
+Modular plugin architecture. Each plugin extends core functionality:
 
-- **plugin-browser** - Browser automation using Chrome DevTools Protocol
-- **plugin-nasa-apod** - NASA Astronomy Picture of the Day integration
+- **plugin-browser** - Browser automation via Chrome DevTools Protocol
+- **plugin-nasa-apod** - NASA Astronomy Picture of the Day
 - **plugin-url-downloader** - Download files from URLs
