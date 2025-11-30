@@ -7,7 +7,7 @@ import { render } from 'ink';
 import { Command } from 'commander';
 import { App } from './App.js';
 import { PluginManager } from './plugin/manager.js';
-import { loadConfig } from './config.js';
+import { loadConfig, normalizeConfig } from './config.js';
 import { startStdioServer } from './mcp/server.js';
 import { startSseServer, stopSseServer } from './mcp/sse-transport.js';
 
@@ -24,12 +24,13 @@ program
   .option('-p, --plugin <plugins...>', 'Plugins to load')
   .action(async (options) => {
     const config = await loadConfig();
+    const normalized = normalizeConfig(config);
     const pluginManager = new PluginManager({
-      plugins: config.pluginConfig,
+      plugins: normalized.pluginConfigs,
     });
 
     // Load plugins from config or command line
-    const pluginsToLoad = options.plugin || config.plugins;
+    const pluginsToLoad = options.plugin || normalized.pluginPackages;
 
     for (const plugin of pluginsToLoad) {
       try {
@@ -62,12 +63,13 @@ program
   .option('--plugin <plugins...>', 'Plugins to load')
   .action(async (options) => {
     const config = await loadConfig();
+    const normalized = normalizeConfig(config);
     const pluginManager = new PluginManager({
-      plugins: config.pluginConfig,
+      plugins: normalized.pluginConfigs,
     });
 
     // Load plugins
-    const pluginsToLoad = options.plugin || config.plugins;
+    const pluginsToLoad = options.plugin || normalized.pluginPackages;
 
     for (const plugin of pluginsToLoad) {
       try {
@@ -117,12 +119,17 @@ program
   .description('List available plugins')
   .action(async () => {
     const config = await loadConfig();
+    const normalized = normalizeConfig(config);
     console.log('Configured plugins:');
-    if (config.plugins.length === 0) {
+    if (normalized.pluginPackages.length === 0) {
       console.log('  (none)');
     } else {
-      for (const plugin of config.plugins) {
-        console.log(`  - ${plugin}`);
+      for (const pkg of normalized.pluginPackages) {
+        const pluginName = pkg.match(/@[^/]+\/mcp-cli-plugin-(.+)$/)?.[1] ||
+                          pkg.match(/^mcp-cli-plugin-(.+)$/)?.[1] ||
+                          pkg;
+        const hasConfig = pluginName in normalized.pluginConfigs;
+        console.log(`  - ${pkg}${hasConfig ? ' (configured)' : ''}`);
       }
     }
     console.log('\nConfig location:', (await import('./config.js')).getConfigPath());

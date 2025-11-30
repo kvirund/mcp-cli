@@ -1,0 +1,33 @@
+{
+  "name": "@anthropic/mcp-cli-plugin-nasa-apod",
+  "version": "0.1.0",
+  "description": "NASA APOD plugin for MCP CLI - explore the cosmos through daily astronomy images",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-cli",
+    "plugin",
+    "nasa",
+    "apod",
+    "astronomy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic/mcp-cli-core": "*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "@anthropic/mcp-cli-core": ">=0.1.0"
+  }
+}

@@ -204,14 +204,104 @@ export function CommandInput({
       return;
     }
 
+    // Ctrl+C - exit
     if (key.ctrl && char === 'c') {
       process.exit(0);
     }
 
+    // Ctrl+U - clear line before cursor
     if (key.ctrl && char === 'u') {
+      const newInput = input.slice(cursorPosition);
+      setInput(newInput);
+      setCursorPosition(0);
+      setSuggestions([]);
+      updateSuggestions(newInput);
+      return;
+    }
+
+    // Ctrl+K - clear line after cursor
+    if (key.ctrl && char === 'k') {
+      const newInput = input.slice(0, cursorPosition);
+      setInput(newInput);
+      updateSuggestions(newInput);
+      return;
+    }
+
+    // Ctrl+A - move to beginning of line
+    if (key.ctrl && char === 'a') {
+      setCursorPosition(0);
+      return;
+    }
+
+    // Ctrl+E - move to end of line
+    if (key.ctrl && char === 'e') {
+      setCursorPosition(input.length);
+      return;
+    }
+
+    // Ctrl+W - delete word before cursor
+    if (key.ctrl && char === 'w') {
+      if (cursorPosition > 0) {
+        const beforeCursor = input.slice(0, cursorPosition);
+        const afterCursor = input.slice(cursorPosition);
+
+        // Find start of previous word (skip trailing spaces, then find word boundary)
+        let pos = cursorPosition - 1;
+        while (pos > 0 && input[pos - 1] === ' ') pos--;
+        while (pos > 0 && input[pos - 1] !== ' ') pos--;
+
+        const newInput = beforeCursor.slice(0, pos) + afterCursor;
+        setInput(newInput);
+        setCursorPosition(pos);
+        updateSuggestions(newInput);
+      }
+      return;
+    }
+
+    // Alt+D - delete word after cursor
+    if (key.meta && char === 'd') {
+      if (cursorPosition < input.length) {
+        const beforeCursor = input.slice(0, cursorPosition);
+        const afterCursor = input.slice(cursorPosition);
+
+        // Find end of next word
+        let pos = 0;
+        while (pos < afterCursor.length && afterCursor[pos] === ' ') pos++;
+        while (pos < afterCursor.length && afterCursor[pos] !== ' ') pos++;
+
+        const newInput = beforeCursor + afterCursor.slice(pos);
+        setInput(newInput);
+        updateSuggestions(newInput);
+      }
+      return;
+    }
+
+    // Ctrl+Left / Alt+B - move word backward
+    if ((key.ctrl && key.leftArrow) || (key.meta && char === 'b')) {
+      let pos = cursorPosition - 1;
+      while (pos > 0 && input[pos - 1] === ' ') pos--;
+      while (pos > 0 && input[pos - 1] !== ' ') pos--;
+      setCursorPosition(Math.max(0, pos));
+      return;
+    }
+
+    // Ctrl+Right / Alt+F - move word forward
+    if ((key.ctrl && key.rightArrow) || (key.meta && char === 'f')) {
+      let pos = cursorPosition;
+      while (pos < input.length && input[pos] === ' ') pos++;
+      while (pos < input.length && input[pos] !== ' ') pos++;
+      setCursorPosition(pos);
+      return;
+    }
+
+    // Ctrl+L - clear screen (handled by parent, just signal)
+    if (key.ctrl && char === 'l') {
+      // Will be handled as a command
+      onSubmit('clear');
       setInput('');
       setCursorPosition(0);
       setSuggestions([]);
+      setHistoryIndex(-1);
       return;
     }
 
@@ -230,7 +320,7 @@ export function CommandInput({
   const afterCursor = input.slice(cursorPosition + 1);
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray">
+    <Box flexDirection="column" borderStyle="single" borderColor="gray" flexShrink={0}>
       <Box paddingX={1}>
         <Text color="green">&gt; </Text>
         <Text>{beforeCursor}</Text>

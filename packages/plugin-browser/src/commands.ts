@@ -5,6 +5,7 @@
 import type { Command, CommandResult } from '@anthropic/mcp-cli-core';
 import * as cdp from './cdp/index.js';
 import { writeFile } from 'fs/promises';
+import { resolve } from 'path';
 
 type NotifyFn = () => void;
 let notifyStateChange: NotifyFn = () => {};
@@ -285,7 +286,7 @@ export const browserCommands: Command[] = [
     async execute(args): Promise<CommandResult> {
       const fullPage = args.includes('--full');
       const pathArg = args.find((a) => !a.startsWith('--'));
-      const outputPath = pathArg || `screenshot-${Date.now()}.png`;
+      const outputPath = resolve(pathArg || `screenshot-${Date.now()}.png`);
 
       try {
         const buffer = await cdp.screenshot({ fullPage });

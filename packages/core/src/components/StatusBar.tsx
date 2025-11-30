@@ -24,6 +24,8 @@ export function StatusBar({ pluginManager, mcp }: StatusBarProps) {
       borderColor="gray"
       paddingX={1}
       justifyContent="space-between"
+      flexShrink={0}
+      height={3}
     >
       <Box gap={2}>
         {/* Plugin statuses */}

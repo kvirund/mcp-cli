@@ -5,12 +5,26 @@
 import type { Command, CommandResult, AppState } from './types.js';
 import type { PluginManager } from '../plugin/manager.js';
 import { commandRegistry } from './registry.js';
+import { startSseServer, stopSseServer, getSseServer } from '../mcp/sse-transport.js';
+
+// Store reference to pluginManager for serve command
+let _pluginManager: PluginManager | null = null;
+
+// Callback for updating MCP status in UI
+let _mcpStatusCallback: ((status: { running: boolean; port?: number; clients: number }) => void) | null = null;
+
+export function setMcpStatusCallback(
+  callback: (status: { running: boolean; port?: number; clients: number }) => void
+): void {
+  _mcpStatusCallback = callback;
+}
 
 /**
  * Create built-in commands
  * These need access to PluginManager, so we create them dynamically
  */
 export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
+  _pluginManager = pluginManager;
   const helpCommand: Command = {
     name: 'help',
     description: 'Show help information',
@@ -157,7 +171,96 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     },
   };
 
-  return [helpCommand, pluginsCommand, clearCommand, exitCommand];
+  const serveCommand: Command = {
+    name: 'serve',
+    description: 'Start MCP SSE server',
+    aliases: ['mcp'],
+    args: [
+      {
+        name: 'port',
+        description: 'Port number (default: 3100)',
+        required: false,
+      },
+    ],
+
+    async execute(args: string[]): Promise<CommandResult> {
+      const existingServer = getSseServer();
+      if (existingServer) {
+        return {
+          output: `MCP server already running on port ${existingServer.port}`,
+          success: false,
+        };
+      }
+
+      const port = args[0] ? parseInt(args[0], 10) : 3100;
+      if (isNaN(port) || port < 1 || port > 65535) {
+        return {
+          output: 'Invalid port number',
+          success: false,
+        };
+      }
+
+      if (!_pluginManager) {
+        return {
+          output: 'Plugin manager not initialized',
+          success: false,
+        };
+      }
+
+      try {
+        const server = await startSseServer({
+          port,
+          name: 'mcp-cli',
+          version: '0.1.0',
+          pluginManager: _pluginManager,
+          onClientCountChange: (count) => {
+            _mcpStatusCallback?.({ running: true, port, clients: count });
+          },
+        });
+        _mcpStatusCallback?.({ running: true, port: server.port, clients: server.getClientCount() });
+        return {
+          output: `MCP SSE server started on port ${port}`,
+          success: true,
+        };
+      } catch (error) {
+        return {
+          output: `Failed to start server: ${error instanceof Error ? error.message : error}`,
+          success: false,
+        };
+      }
+    },
+  };
+
+  const stopCommand: Command = {
+    name: 'stop',
+    description: 'Stop MCP SSE server',
+
+    async execute(): Promise<CommandResult> {
+      const server = getSseServer();
+      if (!server) {
+        return {
+          output: 'MCP server is not running',
+          success: false,
+        };
+      }
+
+      try {
+        await stopSseServer();
+        _mcpStatusCallback?.({ running: false, clients: 0 });
+        return {
+          output: 'MCP server stopped',
+          success: true,
+        };
+      } catch (error) {
+        return {
+          output: `Failed to stop server: ${error instanceof Error ? error.message : error}`,
+          success: false,
+        };
+      }
+    },
+  };
+
+  return [helpCommand, pluginsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
 }
 
 /**

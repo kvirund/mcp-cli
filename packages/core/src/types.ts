@@ -8,7 +8,8 @@
 export interface HistoryEntry {
   timestamp: Date;
   command: string;
-  output: string;
+  output: string;       // wrapped for current terminal width
+  outputRaw: string;    // original output (for rewrap on resize)
   success: boolean;
 }
 

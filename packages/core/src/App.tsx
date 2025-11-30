@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Box, useApp, useStdout } from 'ink';
 import { StatusBar, History, CommandInput } from './components/index.js';
 import { useAppState } from './state.js';
-import { commandRegistry, registerBuiltinCommands } from './commands/index.js';
+import { commandRegistry, registerBuiltinCommands, setMcpStatusCallback } from './commands/index.js';
+import { startSseServer } from './mcp/sse-transport.js';
 import type { PluginManager } from './plugin/manager.js';
 import type { McpStatus } from './types.js';
 
@@ -16,14 +17,20 @@ interface AppProps {
 }
 
 export function App({ pluginManager, welcomeMessage }: AppProps) {
-  const { history, mcp, addHistory, setMcp, clearHistory } = useAppState();
+  const { history, mcp, addHistory, setMcp, clearHistory, setTerminalWidth } = useAppState();
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [displayHistory, setDisplayHistory] = useState(history);
   const [scrollOffset, setScrollOffset] = useState(0);
 
-  // Register built-in commands once
+  // Track terminal width for text wrapping
+  const terminalWidth = stdout?.columns || 120;
+  useEffect(() => {
+    setTerminalWidth(terminalWidth);
+  }, [terminalWidth, setTerminalWidth]);
+
+  // Register built-in commands and start MCP server once
   useEffect(() => {
     registerBuiltinCommands(pluginManager);
 
@@ -33,7 +40,38 @@ export function App({ pluginManager, welcomeMessage }: AppProps) {
         commandRegistry.register(cmd);
       }
     }
-  }, [pluginManager]);
+
+    // Set up MCP status callback
+    setMcpStatusCallback((status) => {
+      setMcp({
+        running: status.running,
+        port: status.port,
+        clients: status.clients,
+      });
+    });
+
+    // Auto-start MCP server on port 3100
+    const port = 3100;
+    startSseServer({
+      port,
+      name: 'mcp-cli',
+      version: '0.1.0',
+      pluginManager,
+      onClientCountChange: (count) => {
+        setMcp({ running: true, port, clients: count });
+      },
+    })
+      .then((server) => {
+        setMcp({ running: true, port: server.port, clients: server.getClientCount() });
+      })
+      .catch((err) => {
+        addHistory({
+          command: '[auto-start]',
+          output: `Failed to start MCP server: ${err instanceof Error ? err.message : err}`,
+          success: false,
+        });
+      });
+  }, [pluginManager, setMcp, addHistory]);
 
   // Get terminal dimensions
   const terminalHeight = stdout?.rows || 24;
@@ -108,13 +146,15 @@ export function App({ pluginManager, welcomeMessage }: AppProps) {
   return (
     <Box flexDirection="column" height={terminalHeight}>
       <StatusBar pluginManager={pluginManager} mcp={mcp} />
-      <History
-        entries={displayHistory}
-        maxLines={historyMaxLines}
-        scrollOffset={scrollOffset}
-        onScroll={setScrollOffset}
-        welcomeMessage={welcomeMessage}
-      />
+      <Box flexGrow={1} flexShrink={1} flexDirection="column" overflow="hidden">
+        <History
+          entries={displayHistory}
+          maxLines={historyMaxLines}
+          scrollOffset={scrollOffset}
+          onScroll={setScrollOffset}
+          welcomeMessage={welcomeMessage}
+        />
+      </Box>
       <CommandInput
         commands={commands}
         pluginManager={pluginManager}

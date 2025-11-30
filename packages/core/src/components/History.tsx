@@ -22,7 +22,8 @@ export function History({
   const totalEntries = entries.length;
   if (totalEntries === 0) {
     return (
-      <Box flexDirection="column" flexGrow={1} paddingX={1}>
+      <Box flexDirection="column" height={maxLines} paddingX={1}>
+        <Text color="gray"> </Text>
         <Text color="gray">{welcomeMessage}</Text>
       </Box>
     );
@@ -31,8 +32,11 @@ export function History({
   const lineCounts = entries.map((e) => getEntryLineCount(e));
   const totalLines = lineCounts.reduce((a, b) => a + b, 0);
 
+  // Reserve 2 lines for scroll indicators (top and bottom)
+  const contentMaxLines = Math.max(1, maxLines - 2);
+
   // Max scroll = total lines minus one screen
-  const maxScrollOffset = Math.max(0, totalLines - maxLines);
+  const maxScrollOffset = Math.max(0, totalLines - contentMaxLines);
   const clampedOffset = Math.min(Math.max(0, scrollOffset), maxScrollOffset);
 
   // Calculate cumulative line positions for each entry
@@ -45,9 +49,9 @@ export function History({
   }
 
   // Find which lines to display
-  // We want to show lines from (totalLines - maxLines - clampedOffset) to (totalLines - clampedOffset)
+  // We want to show lines from (totalLines - contentMaxLines - clampedOffset) to (totalLines - clampedOffset)
   const bottomLine = totalLines - clampedOffset; // exclusive
-  const topLine = Math.max(0, bottomLine - maxLines); // inclusive
+  const topLine = Math.max(0, bottomLine - contentMaxLines); // inclusive
 
   // Find entries that overlap with [topLine, bottomLine)
   type VisibleEntry = {
@@ -82,10 +86,6 @@ export function History({
   const hasOlder = topLine > 0;
   const hasNewer = bottomLine < totalLines;
 
-  // Calculate how many lines are hidden
-  const linesAbove = topLine;
-  const linesBelow = totalLines - bottomLine;
-
   // Handle keyboard input
   useInput((_char, key) => {
     // Shift + Arrow = scroll by 1 line
@@ -103,17 +103,21 @@ export function History({
   });
 
   return (
-    <Box flexDirection="column" flexGrow={1} paddingX={1}>
-      {hasOlder && <Text color="gray">▲ Shift+↑ or PgUp ({linesAbove} lines above)</Text>}
-      {visibleEntries.map(({ entry, entryIdx, skipLinesTop, skipLinesBottom }) => (
-        <HistoryEntryDisplay
-          key={entryIdx}
-          entry={entry}
-          skipLinesTop={skipLinesTop}
-          skipLinesBottom={skipLinesBottom}
-        />
-      ))}
-      {hasNewer && <Text color="gray">▼ Shift+↓ or PgDn ({linesBelow} lines below)</Text>}
+    <Box flexDirection="column" height={maxLines} paddingX={1}>
+      {/* Always reserve line for top indicator */}
+      <Text color="gray">{hasOlder ? `▲ Shift+↑ or PgUp (${topLine} lines above)` : '  Shift+↑ or PgUp'}</Text>
+      <Box flexDirection="column" height={contentMaxLines} overflow="hidden">
+        {visibleEntries.map(({ entry, entryIdx, skipLinesTop, skipLinesBottom }) => (
+          <HistoryEntryDisplay
+            key={entryIdx}
+            entry={entry}
+            skipLinesTop={skipLinesTop}
+            skipLinesBottom={skipLinesBottom}
+          />
+        ))}
+      </Box>
+      {/* Always reserve line for bottom indicator */}
+      <Text color="gray">{hasNewer ? `▼ Shift+↓ or PgDn (${totalLines - bottomLine} lines below)` : '  Shift+↓ or PgDn'}</Text>
     </Box>
   );
 }
@@ -170,11 +174,6 @@ function HistoryEntryDisplay({
 
   return (
     <Box flexDirection="column">
-      {skipLinesTop > 0 && (
-        <Text color="gray" dimColor>
-          {'  '}··· ({skipLinesTop} lines above)
-        </Text>
-      )}
       {showCommandLine && (
         <Box gap={1}>
           <Text color="gray">{timeStr}</Text>
@@ -196,11 +195,6 @@ function HistoryEntryDisplay({
           </Box>
         );
       })}
-      {skipLinesBottom > 0 && (
-        <Text color="gray" dimColor>
-          {'  '}··· ({skipLinesBottom} lines below)
-        </Text>
-      )}
     </Box>
   );
 }

@@ -197,6 +197,10 @@ export class SseMcpServer {
   isRunning(): boolean {
     return this.httpServer !== null && this.httpServer.listening;
   }
+
+  get port(): number {
+    return this.options.port;
+  }
 }
 
 let sseServer: SseMcpServer | null = null;

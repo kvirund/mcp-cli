@@ -5,6 +5,7 @@
 import type { McpTool } from '@anthropic/mcp-cli-core';
 import * as cdp from './cdp/index.js';
 import { writeFile } from 'fs/promises';
+import { resolve } from 'path';
 
 export const browserMcpTools: McpTool[] = [
   {
@@ -85,7 +86,7 @@ export const browserMcpTools: McpTool[] = [
     },
     async handler(params) {
       const fullPage = (params.fullPage as boolean) || false;
-      const outputPath = (params.outputPath as string) || `screenshot-${Date.now()}.png`;
+      const outputPath = resolve((params.outputPath as string) || `screenshot-${Date.now()}.png`);
       const buffer = await cdp.screenshot({ fullPage });
       await writeFile(outputPath, buffer);
       return `Screenshot saved to ${outputPath} (${buffer.length} bytes)`;
