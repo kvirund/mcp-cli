@@ -117,7 +117,8 @@ export function transformApodEntry(entry: ApodEntry): ApodOutput {
 /**
  * Strip non-printable characters, keeping only printable ASCII and newlines
  */
-function stripNonPrintable(s: string): string {
+function stripNonPrintable(s: string | undefined): string {
+  if (!s) return '';
   // Keep only printable ASCII (0x20-0x7E) and newline (0x0A)
   return s.replace(/[^\x20-\x7E\n]/g, '');
 }

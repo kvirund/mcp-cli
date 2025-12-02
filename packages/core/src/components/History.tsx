@@ -104,8 +104,8 @@ export function History({
 
   return (
     <Box flexDirection="column" height={maxLines} paddingX={1}>
-      {/* Always reserve line for top indicator */}
-      <Text color="gray">{hasOlder ? `▲ Shift+↑ or PgUp (${topLine} lines above)` : '  Shift+↑ or PgUp'}</Text>
+      {/* Top indicator - empty when nothing above */}
+      <Text color="gray">{hasOlder ? `▲ Shift+↑ or PgUp (${topLine} lines above)` : ' '}</Text>
       <Box flexDirection="column" height={contentMaxLines} overflow="hidden">
         {visibleEntries.map(({ entry, entryIdx, skipLinesTop, skipLinesBottom }) => (
           <HistoryEntryDisplay
@@ -116,8 +116,8 @@ export function History({
           />
         ))}
       </Box>
-      {/* Always reserve line for bottom indicator */}
-      <Text color="gray">{hasNewer ? `▼ Shift+↓ or PgDn (${totalLines - bottomLine} lines below)` : '  Shift+↓ or PgDn'}</Text>
+      {/* Bottom indicator - empty when nothing below */}
+      <Text color="gray">{hasNewer ? `▼ Shift+↓ or PgDn (${totalLines - bottomLine} lines below)` : ' '}</Text>
     </Box>
   );
 }
