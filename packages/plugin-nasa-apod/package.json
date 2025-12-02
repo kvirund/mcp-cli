@@ -1,7 +1,12 @@
 {
-  "name": "@anthropic/mcp-cli-plugin-nasa-apod",
+  "name": "@kvirund/mcp-cli-plugin-nasa-apod",
   "version": "0.1.0",
   "description": "NASA APOD plugin for MCP CLI - explore the cosmos through daily astronomy images",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kvirund/mcp-cli.git",
+    "directory": "packages/plugin-nasa-apod"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,10 +22,10 @@
     "apod",
     "astronomy"
   ],
-  "author": "",
+  "author": "kvirund",
   "license": "MIT",
   "dependencies": {
-    "@anthropic/mcp-cli-core": "*",
+    "@kvirund/mcp-cli": "*",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -28,6 +33,6 @@
     "typescript": "^5.6.0"
   },
   "peerDependencies": {
-    "@anthropic/mcp-cli-core": ">=0.1.0"
+    "@kvirund/mcp-cli": ">=0.1.0"
   }
 }

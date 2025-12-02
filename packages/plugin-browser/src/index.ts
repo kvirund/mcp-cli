@@ -4,7 +4,7 @@
  * Provides browser automation via Chrome DevTools Protocol
  */
 
-import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@anthropic/mcp-cli-core';
+import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@kvirund/mcp-cli';
 import { browserCommands, setNotifyFn } from './commands.js';
 import { browserMcpTools } from './mcp-tools.js';
 import * as cdp from './cdp/index.js';

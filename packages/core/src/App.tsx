@@ -144,7 +144,7 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
   // Calculate available height for history
   const statusBarHeight = 3;
   const commandInputHeight = 3;
-  const historyMaxLines = Math.max(10, terminalHeight - statusBarHeight - commandInputHeight);
+  const historyMaxLines = Math.max(3, terminalHeight - statusBarHeight - commandInputHeight);
 
   return (
     <Box flexDirection="column" height={terminalHeight}>

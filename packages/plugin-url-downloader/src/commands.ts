@@ -2,7 +2,7 @@
  * CLI commands for URL downloader plugin
  */
 
-import type { Command } from '@anthropic/mcp-cli-core';
+import type { Command } from '@kvirund/mcp-cli';
 import { httpRequest, formatResponse, parseHeaders } from './http-client.js';
 
 export const urlDownloaderCommands: Command[] = [

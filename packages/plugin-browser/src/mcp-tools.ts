@@ -2,7 +2,7 @@
  * MCP tools for browser plugin
  */
 
-import type { McpTool } from '@anthropic/mcp-cli-core';
+import type { McpTool } from '@kvirund/mcp-cli';
 import * as cdp from './cdp/index.js';
 import { writeFile } from 'fs/promises';
 import { resolve } from 'path';

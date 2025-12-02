@@ -2,7 +2,7 @@
  * CLI commands for NASA APOD plugin
  */
 
-import type { Command, CommandResult } from '@anthropic/mcp-cli-core';
+import type { Command, CommandResult } from '@kvirund/mcp-cli';
 import {
   fetchTodayApod,
   fetchApodByDate,

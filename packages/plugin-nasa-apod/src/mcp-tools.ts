@@ -2,7 +2,7 @@
  * MCP tools for NASA APOD plugin
  */
 
-import type { McpTool } from '@anthropic/mcp-cli-core';
+import type { McpTool } from '@kvirund/mcp-cli';
 import { ResponseFormat } from './types.js';
 import { APOD_START_DATE, CHARACTER_LIMIT, MAX_ENTRIES, DEFAULT_RANDOM_COUNT } from './constants.js';
 import {

@@ -2,7 +2,7 @@
  * MCP tools for URL downloader plugin
  */
 
-import type { McpTool } from '@anthropic/mcp-cli-core';
+import type { McpTool } from '@kvirund/mcp-cli';
 import { httpRequest, formatResponse } from './http-client.js';
 
 export const urlDownloaderMcpTools: McpTool[] = [

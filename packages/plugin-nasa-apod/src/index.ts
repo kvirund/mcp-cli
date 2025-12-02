@@ -4,7 +4,7 @@
  * Provides access to NASA's Astronomy Picture of the Day API
  */
 
-import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@anthropic/mcp-cli-core';
+import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@kvirund/mcp-cli';
 import { nasaApodCommands } from './commands.js';
 import { nasaApodMcpTools } from './mcp-tools.js';
 import { setConfigApiKey, hasCustomApiKey } from './constants.js';

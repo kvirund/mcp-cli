@@ -2,7 +2,7 @@
  * Browser plugin commands
  */
 
-import type { Command, CommandResult } from '@anthropic/mcp-cli-core';
+import type { Command, CommandResult } from '@kvirund/mcp-cli';
 import * as cdp from './cdp/index.js';
 import { writeFile } from 'fs/promises';
 import { resolve } from 'path';

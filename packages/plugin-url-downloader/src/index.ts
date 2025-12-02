@@ -4,7 +4,7 @@
  * Provides curl-like functionality for fetching URLs
  */
 
-import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@anthropic/mcp-cli-core';
+import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@kvirund/mcp-cli';
 import { urlDownloaderCommands } from './commands.js';
 import { urlDownloaderMcpTools } from './mcp-tools.js';
 

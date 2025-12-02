@@ -5,7 +5,8 @@
       "Bash(npm pack:*)",
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
-      "Bash(npm config:*)"
+      "Bash(npm config:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
