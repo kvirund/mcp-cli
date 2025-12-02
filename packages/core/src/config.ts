@@ -99,7 +99,7 @@ export function normalizeConfig(config: Config): NormalizedConfig {
       pluginPackages.push(entry.name);
       if (entry.config) {
         // Extract plugin name from package name for config mapping
-        // e.g., "@anthropic/mcp-cli-plugin-nasa-apod" -> "nasa-apod"
+        // e.g., "@kvirund/mcp-cli-plugin-nasa-apod" -> "nasa-apod"
         const pluginName = extractPluginName(entry.name);
         pluginConfigs[pluginName] = entry.config;
       }
@@ -111,7 +111,7 @@ export function normalizeConfig(config: Config): NormalizedConfig {
 
 /**
  * Extract plugin name from package name
- * e.g., "@anthropic/mcp-cli-plugin-nasa-apod" -> "nasa-apod"
+ * e.g., "@kvirund/mcp-cli-plugin-nasa-apod" -> "nasa-apod"
  * or "my-plugin" -> "my-plugin"
  */
 function extractPluginName(packageName: string): string {

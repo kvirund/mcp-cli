@@ -2,6 +2,12 @@
 
 Universal CLI framework with plugin system for MCP (Model Context Protocol) servers.
 
+## Installation
+
+```bash
+npm install -g @kvirund/mcp-cli
+```
+
 ## Structure
 
 ```
@@ -16,24 +22,6 @@ packages/
 
 - Node.js >= 18.0.0
 
-## Installation
-
-```bash
-npm install
-```
-
-## Build
-
-```bash
-npm run build
-```
-
-## Development
-
-```bash
-npm run dev
-```
-
 ## Usage
 
 ### Interactive Mode
@@ -43,7 +31,7 @@ npm run dev
 mcp-cli
 
 # With specific plugins
-mcp-cli -p @anthropic/mcp-cli-plugin-browser
+mcp-cli -p @kvirund/mcp-cli-plugin-browser
 ```
 
 ### Server Mode
@@ -85,9 +73,9 @@ Config file: `~/.mcp-cli/config.json`
     "port": 3000
   },
   "plugins": [
-    "@anthropic/mcp-cli-plugin-browser",
+    "@kvirund/mcp-cli-plugin-browser",
     {
-      "name": "@anthropic/mcp-cli-plugin-nasa-apod",
+      "name": "@kvirund/mcp-cli-plugin-nasa-apod",
       "config": {
         "apiKey": "your-nasa-api-key"
       }
@@ -107,6 +95,10 @@ Config file: `~/.mcp-cli/config.json`
 
 Modular plugin architecture. Each plugin extends core functionality:
 
-- **plugin-browser** - Browser automation via Chrome DevTools Protocol
-- **plugin-nasa-apod** - NASA Astronomy Picture of the Day
-- **plugin-url-downloader** - Download files from URLs
+- **@kvirund/mcp-cli-plugin-browser** - Browser automation via Chrome DevTools Protocol
+- **@kvirund/mcp-cli-plugin-nasa-apod** - NASA Astronomy Picture of the Day
+- **@kvirund/mcp-cli-plugin-url-downloader** - HTTP client for fetching URLs
+
+## License
+
+MIT
