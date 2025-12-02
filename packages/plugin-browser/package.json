@@ -1,6 +1,6 @@
 {
   "name": "@kvirund/mcp-cli-plugin-browser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Browser automation plugin for MCP CLI via Chrome DevTools Protocol",
   "author": "kvirund",
   "license": "MIT",
@@ -39,5 +39,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
 }
