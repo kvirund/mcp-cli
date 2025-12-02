@@ -5,7 +5,13 @@ Universal CLI framework with plugin system for MCP (Model Context Protocol) serv
 ## Installation
 
 ```bash
+# Install CLI
 npm install -g @kvirund/mcp-cli
+
+# Install plugins
+npm install -g @kvirund/mcp-cli-plugin-browser
+npm install -g @kvirund/mcp-cli-plugin-nasa-apod
+npm install -g @kvirund/mcp-cli-plugin-url-downloader
 ```
 
 ## Structure
