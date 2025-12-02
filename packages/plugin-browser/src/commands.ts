@@ -278,13 +278,13 @@ export const browserCommands: Command[] = [
 
   {
     name: 'screenshot',
-    description: 'Take a screenshot',
+    description: 'Take a screenshot (full page by default)',
     args: [
       { name: 'path', description: 'Output file path', required: false },
-      { name: 'fullPage', description: 'Capture full page', required: false, choices: ['--full'] },
+      { name: 'viewportOnly', description: 'Capture only viewport', required: false, choices: ['--viewport'] },
     ],
     async execute(args): Promise<CommandResult> {
-      const fullPage = args.includes('--full');
+      const fullPage = !args.includes('--viewport');
       const pathArg = args.find((a) => !a.startsWith('--'));
       const outputPath = resolve(pathArg || `screenshot-${Date.now()}.png`);
 

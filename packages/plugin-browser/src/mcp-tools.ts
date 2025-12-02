@@ -76,16 +76,16 @@ export const browserMcpTools: McpTool[] = [
 
   {
     name: 'screenshot',
-    description: 'Take a screenshot of the current page',
+    description: 'Take a screenshot of the current page (full page by default)',
     inputSchema: {
       type: 'object',
       properties: {
-        fullPage: { type: 'boolean', description: 'Capture full page (not just viewport)' },
+        viewportOnly: { type: 'boolean', description: 'Capture only visible viewport instead of full page' },
         outputPath: { type: 'string', description: 'Path to save screenshot' },
       },
     },
     async handler(params) {
-      const fullPage = (params.fullPage as boolean) || false;
+      const fullPage = !params.viewportOnly;
       const outputPath = resolve((params.outputPath as string) || `screenshot-${Date.now()}.png`);
       const buffer = await cdp.screenshot({ fullPage });
       await writeFile(outputPath, buffer);

@@ -70,7 +70,7 @@ const browserPlugin: Plugin = {
         'navigate <url>         - Navigate to URL',
         'click <selector>       - Click element',
         'type <selector> <text> - Type text into element',
-        'screenshot [path]      - Take screenshot',
+        'screenshot [path] [--viewport] - Take screenshot (full page by default)',
       ].join('\n'),
       sections: [
         {
