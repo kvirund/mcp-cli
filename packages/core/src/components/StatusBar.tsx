@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { Box, Text } from 'ink';
 import type { PluginManager } from '../plugin/manager.js';
 import type { PluginStatus } from '../plugin/types.js';
@@ -16,7 +15,7 @@ const indicatorColors: Record<PluginStatus['indicator'], string> = {
   gray: 'gray',
 };
 
-export const StatusBar = memo(function StatusBar({ pluginManager, mcp }: StatusBarProps) {
+export function StatusBar({ pluginManager, mcp }: StatusBarProps) {
   const plugins = pluginManager.getAll();
 
   return (
@@ -56,9 +55,10 @@ export const StatusBar = memo(function StatusBar({ pluginManager, mcp }: StatusB
         {/* MCP status */}
         <McpStatusDisplay status={mcp} />
       </Box>
+      <Text color="gray">{formatTime(new Date())}</Text>
     </Box>
   );
-});
+}
 
 function McpStatusDisplay({ status }: { status: McpStatus }) {
   const indicator = status.running ? (
@@ -83,3 +83,11 @@ function McpStatusDisplay({ status }: { status: McpStatus }) {
   );
 }
 
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}

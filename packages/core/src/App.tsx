@@ -85,8 +85,14 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
     setScrollOffset(0);
   }, [history]);
 
-  // Force re-render trigger for plugin state changes
+  // Force re-render trigger for status updates
   const [, setTick] = useState(0);
+
+  // Update status bar periodically (every 1 second)
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Listen for plugin state changes
   useEffect(() => {

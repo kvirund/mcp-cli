@@ -38,13 +38,14 @@ program
       }
     }
 
-    // Render the app
+    // Render the app with patchConsole disabled to reduce flickering
     const { waitUntilExit } = render(
       <App
         pluginManager={pluginManager}
         welcomeMessage="Welcome to MCP CLI. Type 'help' for available commands."
         config={config}
-      />
+      />,
+      { patchConsole: false }
     );
 
     await waitUntilExit();
