@@ -30,3 +30,9 @@ npm-debug.log*
 
 # Package lock (use root only)
 packages/*/package-lock.json
+
+# Test coverage
+coverage/
+
+# Package tarballs
+*.tgz

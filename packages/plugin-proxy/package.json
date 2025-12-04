@@ -1,29 +1,21 @@
 {
-  "name": "@kvirund/mcp-cli",
-  "version": "0.1.1",
-  "description": "Universal CLI framework with plugin system for MCP servers",
+  "name": "@kvirund/mcp-cli-plugin-proxy",
+  "version": "0.1.0",
+  "description": "MCP proxy plugin - connect to external MCP servers",
   "author": "kvirund",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/kvirund/mcp-cli.git",
-    "directory": "packages/core"
+    "directory": "packages/plugin-proxy"
   },
-  "keywords": ["mcp", "cli", "model-context-protocol", "plugin"],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "mcp-cli": "./dist/cli.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./plugin": {
-      "types": "./dist/plugin/types.d.ts",
-      "import": "./dist/plugin/index.js"
     }
   },
   "scripts": {
@@ -32,19 +24,16 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "ink": "^5.1.0",
-    "ink-text-input": "^6.0.0",
-    "react": "^18.3.1",
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "@kvirund/mcp-cli-plugin-proxy": "*",
-    "chalk": "^5.3.0",
-    "commander": "^12.1.0"
+    "@kvirund/mcp-cli": "*",
+    "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "@types/react": "^18.3.12",
     "typescript": "^5.7.2",
     "rimraf": "^6.0.1"
+  },
+  "peerDependencies": {
+    "@kvirund/mcp-cli": ">=0.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

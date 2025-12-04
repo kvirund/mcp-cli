@@ -21,8 +21,7 @@ program
 program
   .command('interactive', { isDefault: true })
   .description('Start interactive CLI mode')
-  .option('-p, --plugin <plugins...>', 'Plugins to load')
-  .action(async (options) => {
+  .action(async () => {
     const config = await loadConfig();
     const normalized = normalizeConfig(config);
     const pluginManager = new PluginManager({
@@ -30,14 +29,12 @@ program
       disabledTools: normalized.disabledTools,
     });
 
-    // Load plugins from config or command line
-    const pluginsToLoad = options.plugin || normalized.pluginPackages;
-
-    for (const plugin of pluginsToLoad) {
+    // Load plugins from config
+    for (const [pluginName, packageName] of Object.entries(normalized.plugins)) {
       try {
-        await pluginManager.loadPlugin(plugin);
+        await pluginManager.loadPlugin(pluginName, packageName);
       } catch (error) {
-        console.error(`Failed to load plugin ${plugin}:`, error);
+        console.error(`Failed to load plugin ${pluginName}:`, error);
       }
     }
 
@@ -62,7 +59,6 @@ program
   .description('Start MCP server')
   .option('-m, --mode <mode>', 'Server mode: stdio or sse', 'stdio')
   .option('-p, --port <port>', 'SSE server port (default: from config or 3000)')
-  .option('--plugin <plugins...>', 'Plugins to load')
   .action(async (options) => {
     const config = await loadConfig();
     const normalized = normalizeConfig(config);
@@ -71,15 +67,13 @@ program
       disabledTools: normalized.disabledTools,
     });
 
-    // Load plugins
-    const pluginsToLoad = options.plugin || normalized.pluginPackages;
-
-    for (const plugin of pluginsToLoad) {
+    // Load plugins from config
+    for (const [pluginName, packageName] of Object.entries(normalized.plugins)) {
       try {
-        await pluginManager.loadPlugin(plugin);
-        console.error(`Loaded plugin: ${plugin}`);
+        await pluginManager.loadPlugin(pluginName, packageName);
+        console.error(`Loaded plugin: ${pluginName}`);
       } catch (error) {
-        console.error(`Failed to load plugin ${plugin}:`, error);
+        console.error(`Failed to load plugin ${pluginName}:`, error);
       }
     }
 
@@ -124,15 +118,17 @@ program
     const config = await loadConfig();
     const normalized = normalizeConfig(config);
     console.log('Configured plugins:');
-    if (normalized.pluginPackages.length === 0) {
+    const pluginEntries = Object.entries(normalized.plugins);
+    if (pluginEntries.length === 0) {
       console.log('  (none)');
     } else {
-      for (const pkg of normalized.pluginPackages) {
-        const pluginName = pkg.match(/@[^/]+\/mcp-cli-plugin-(.+)$/)?.[1] ||
-                          pkg.match(/^mcp-cli-plugin-(.+)$/)?.[1] ||
-                          pkg;
+      for (const [pluginName, packageName] of pluginEntries) {
         const hasConfig = pluginName in normalized.pluginConfigs;
-        console.log(`  - ${pkg}${hasConfig ? ' (configured)' : ''}`);
+        const hasDisabledTools = pluginName in normalized.disabledTools;
+        const flags = [hasConfig ? 'configured' : '', hasDisabledTools ? 'tools disabled' : '']
+          .filter(Boolean)
+          .join(', ');
+        console.log(`  - ${pluginName}: ${packageName}${flags ? ` (${flags})` : ''}`);
       }
     }
     console.log('\nConfig location:', (await import('./config.js')).getConfigPath());

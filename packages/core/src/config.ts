@@ -7,42 +7,47 @@ import { join } from 'path';
 import { homedir } from 'os';
 
 /**
- * Plugin entry can be:
- * - string: just the package name
- * - object: package name with config and disabled tools
+ * Plugin entry in the new dictionary format
  */
-export type PluginEntry =
-  | string
-  | {
-      name: string;
-      config?: Record<string, unknown>;
-      /** List of tool names to disable (without plugin prefix) */
-      disabledTools?: string[];
-    };
+export interface PluginEntry {
+  /** npm package name to load */
+  package: string;
+  /** Plugin-specific configuration */
+  config?: Record<string, unknown>;
+  /** List of tool names to disable (without plugin prefix) */
+  disabledTools?: string[];
+}
 
 export interface McpConfig {
   port?: number;
 }
 
+/**
+ * Config format where plugins is a dictionary.
+ * Key = plugin name (used for tool prefixes, commands, etc.)
+ * Value = plugin entry with package name and optional config
+ */
 export interface Config {
-  plugins: PluginEntry[];
+  plugins: Record<string, PluginEntry>;
   mcp?: McpConfig;
 }
 
 export const DEFAULT_MCP_PORT = 3000;
 
 /**
- * Normalized config with plugin configs extracted
+ * Normalized config with plugin data extracted for PluginManager
  */
 export interface NormalizedConfig {
-  pluginPackages: string[];
+  /** Map of plugin name -> package name to load */
+  plugins: Record<string, string>;
+  /** Map of plugin name -> config */
   pluginConfigs: Record<string, Record<string, unknown>>;
   /** Disabled tools per plugin (plugin name -> array of tool names without prefix) */
   disabledTools: Record<string, string[]>;
 }
 
 const DEFAULT_CONFIG: Config = {
-  plugins: [],
+  plugins: {},
 };
 
 export function getConfigDir(): string {
@@ -88,55 +93,24 @@ export async function ensureConfigExists(): Promise<Config> {
 }
 
 /**
- * Normalize config by extracting plugin package names and their configs
+ * Normalize config by extracting plugin data for PluginManager
  */
 export function normalizeConfig(config: Config): NormalizedConfig {
-  const pluginPackages: string[] = [];
+  const plugins: Record<string, string> = {};
   const pluginConfigs: Record<string, Record<string, unknown>> = {};
   const disabledTools: Record<string, string[]> = {};
 
-  for (const entry of config.plugins) {
-    if (typeof entry === 'string') {
-      // Simple string entry - just the package name
-      pluginPackages.push(entry);
-    } else {
-      // Object entry with name and optional config
-      pluginPackages.push(entry.name);
-      const pluginName = extractPluginName(entry.name);
+  for (const [pluginName, entry] of Object.entries(config.plugins)) {
+    plugins[pluginName] = entry.package;
 
-      if (entry.config) {
-        // Extract plugin name from package name for config mapping
-        // e.g., "@kvirund/mcp-cli-plugin-nasa-apod" -> "nasa-apod"
-        pluginConfigs[pluginName] = entry.config;
-      }
+    if (entry.config) {
+      pluginConfigs[pluginName] = entry.config;
+    }
 
-      if (entry.disabledTools && entry.disabledTools.length > 0) {
-        disabledTools[pluginName] = entry.disabledTools;
-      }
+    if (entry.disabledTools && entry.disabledTools.length > 0) {
+      disabledTools[pluginName] = entry.disabledTools;
     }
   }
 
-  return { pluginPackages, pluginConfigs, disabledTools };
-}
-
-/**
- * Extract plugin name from package name
- * e.g., "@kvirund/mcp-cli-plugin-nasa-apod" -> "nasa-apod"
- * or "my-plugin" -> "my-plugin"
- */
-function extractPluginName(packageName: string): string {
-  // Handle scoped packages: @scope/mcp-cli-plugin-name -> name
-  const scopedMatch = packageName.match(/@[^/]+\/mcp-cli-plugin-(.+)$/);
-  if (scopedMatch) {
-    return scopedMatch[1];
-  }
-
-  // Handle unscoped packages: mcp-cli-plugin-name -> name
-  const unscopedMatch = packageName.match(/^mcp-cli-plugin-(.+)$/);
-  if (unscopedMatch) {
-    return unscopedMatch[1];
-  }
-
-  // Fallback: use package name as-is (for custom naming)
-  return packageName;
+  return { plugins, pluginConfigs, disabledTools };
 }

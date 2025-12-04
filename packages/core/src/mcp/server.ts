@@ -11,18 +11,21 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import type { PluginManager } from '../plugin/manager.js';
 import type { McpTool } from '../plugin/types.js';
+import { toolCallLogger } from './logger.js';
 
 export interface McpServerOptions {
   name: string;
   version: string;
   pluginManager: PluginManager;
+  /** Client ID for logging (default: 'stdio') */
+  clientId?: string;
 }
 
 /**
  * Create an MCP server with dynamic tools from plugins
  */
 export function createMcpServer(options: McpServerOptions): Server {
-  const { name, version, pluginManager } = options;
+  const { name, version, pluginManager, clientId = 'stdio' } = options;
 
   const server = new Server(
     { name, version },
@@ -49,12 +52,23 @@ export function createMcpServer(options: McpServerOptions): Server {
   // Call tool - route to appropriate plugin
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name: toolName, arguments: args } = request.params;
+    const startTime = Date.now();
 
     // Find the tool
     const pluginTools = pluginManager.getMcpTools();
     const tool = pluginTools.find((t) => t.name === toolName);
 
     if (!tool) {
+      toolCallLogger.log({
+        timestamp: new Date(),
+        clientId,
+        tool: toolName,
+        params: args || {},
+        success: false,
+        error: `Unknown tool: ${toolName}`,
+        duration: Date.now() - startTime,
+      });
+
       return {
         content: [{ type: 'text', text: `Unknown tool: ${toolName}` }],
         isError: true,
@@ -66,11 +80,31 @@ export function createMcpServer(options: McpServerOptions): Server {
       const text =
         typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
 
+      toolCallLogger.log({
+        timestamp: new Date(),
+        clientId,
+        tool: toolName,
+        params: args || {},
+        success: true,
+        duration: Date.now() - startTime,
+      });
+
       return {
         content: [{ type: 'text', text }],
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+
+      toolCallLogger.log({
+        timestamp: new Date(),
+        clientId,
+        tool: toolName,
+        params: args || {},
+        success: false,
+        error: message,
+        duration: Date.now() - startTime,
+      });
+
       return {
         content: [{ type: 'text', text: `Error: ${message}` }],
         isError: true,

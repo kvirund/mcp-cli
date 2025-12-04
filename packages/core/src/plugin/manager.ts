@@ -38,9 +38,11 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * Load a plugin from an npm package
+   * Load a plugin from an npm package with a specific name
+   * @param pluginName - The name to register the plugin under (from config key)
+   * @param packageName - The npm package name to import
    */
-  async loadPlugin(packageName: string): Promise<void> {
+  async loadPlugin(pluginName: string, packageName: string): Promise<void> {
     try {
       // Dynamic import
       const module = (await import(packageName)) as PluginModule;
@@ -49,17 +51,15 @@ export class PluginManager extends EventEmitter {
       // Validate
       this.validatePlugin(plugin, packageName);
 
-      const { name } = plugin.manifest;
-
       // Check for duplicates
-      if (this.plugins.has(name)) {
-        throw new Error(`Plugin already loaded: ${name}`);
+      if (this.plugins.has(pluginName)) {
+        throw new Error(`Plugin already loaded: ${pluginName}`);
       }
 
-      // Create context
-      const pluginConfig = this.config.plugins?.[name] ?? {};
+      // Create context with the config-provided name
+      const pluginConfig = this.config.plugins?.[pluginName] ?? {};
       const context = createPluginContext({
-        pluginName: name,
+        pluginName: pluginName,
         config: pluginConfig,
         onStateChange: (pName) => this.emit('stateChange', pName),
       });
@@ -68,16 +68,16 @@ export class PluginManager extends EventEmitter {
       await plugin.init(context);
 
       // Get disabled tools from config
-      const disabledToolsArray = this.config.disabledTools?.[name] ?? [];
+      const disabledToolsArray = this.config.disabledTools?.[pluginName] ?? [];
       const disabledTools = new Set(disabledToolsArray);
 
-      // Store plugin
-      this.plugins.set(name, { plugin, enabled: true, disabledTools });
+      // Store plugin under the config-provided name
+      this.plugins.set(pluginName, { plugin, enabled: true, disabledTools });
 
-      this.emit('pluginLoaded', name);
+      this.emit('pluginLoaded', pluginName);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to load plugin ${packageName}: ${message}`);
+      throw new Error(`Failed to load plugin ${pluginName} from ${packageName}: ${message}`);
     }
   }
 
@@ -342,10 +342,11 @@ export class PluginManager extends EventEmitter {
 
   /**
    * Load plugins from config
+   * @param plugins - Map of plugin name -> package name
    */
-  async loadFromConfig(pluginPackages: string[]): Promise<void> {
-    for (const pkg of pluginPackages) {
-      await this.loadPlugin(pkg);
+  async loadFromConfig(plugins: Record<string, string>): Promise<void> {
+    for (const [pluginName, packageName] of Object.entries(plugins)) {
+      await this.loadPlugin(pluginName, packageName);
     }
   }
 

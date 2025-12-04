@@ -7,6 +7,7 @@ import type { PluginManager } from '../plugin/manager.js';
 import { commandRegistry } from './registry.js';
 import { startSseServer, stopSseServer, getSseServer } from '../mcp/sse-transport.js';
 import { DEFAULT_MCP_PORT } from '../config.js';
+import { toolCallLogger, ToolCallLogger } from '../mcp/logger.js';
 
 // Store reference to pluginManager for serve command
 let _pluginManager: PluginManager | null = null;
@@ -349,7 +350,53 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     },
   };
 
-  return [helpCommand, pluginsCommand, toolsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
+  const logsCommand: Command = {
+    name: 'logs',
+    description: 'View MCP tool call logs',
+    aliases: ['log'],
+    args: [
+      {
+        name: 'action',
+        description: 'Action: show count or clear',
+        required: false,
+        choices: ['clear'],
+      },
+      {
+        name: 'count',
+        description: 'Number of log entries to show (default: 20)',
+        required: false,
+      },
+    ],
+
+    async execute(args: string[]): Promise<CommandResult> {
+      const [actionOrCount] = args;
+
+      if (actionOrCount === 'clear') {
+        toolCallLogger.clear();
+        return { output: 'Log history cleared', success: true };
+      }
+
+      const count = actionOrCount ? parseInt(actionOrCount, 10) : 20;
+      if (isNaN(count) || count < 1) {
+        return { output: 'Invalid count', success: false };
+      }
+
+      const logs = toolCallLogger.getHistory(count);
+      if (logs.length === 0) {
+        return { output: 'No log entries', success: true };
+      }
+
+      const lines = [
+        `Tool call logs (${logs.length} of ${toolCallLogger.getCount()} total):`,
+        '',
+        ...logs.map((entry) => ToolCallLogger.formatEntry(entry)),
+      ];
+
+      return { output: lines.join('\n'), success: true };
+    },
+  };
+
+  return [helpCommand, pluginsCommand, toolsCommand, logsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
 }
 
 /**

@@ -88,6 +88,7 @@ export class SseMcpServer {
       name: this.options.name,
       version: this.options.version,
       pluginManager: this.options.pluginManager,
+      clientId,
     });
 
     const client: SseClient = { id: clientId, res, server };
