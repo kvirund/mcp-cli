@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Text, useInput } from 'ink';
 import type { HistoryEntry } from '../types.js';
 
@@ -9,7 +10,7 @@ interface HistoryProps {
   welcomeMessage?: string;
 }
 
-export function History({
+export const History = memo(function History({
   entries,
   maxLines = 15,
   scrollOffset,
@@ -120,7 +121,7 @@ export function History({
       <Text color="gray">{hasNewer ? `▼ Shift+↓ or PgDn (${totalLines - bottomLine} lines below)` : ' '}</Text>
     </Box>
   );
-}
+});
 
 // Calculate how many lines an entry will take
 export function getEntryLineCount(entry: HistoryEntry): number {
@@ -136,7 +137,7 @@ interface HistoryEntryDisplayProps {
   skipLinesBottom?: number;
 }
 
-function HistoryEntryDisplay({
+const HistoryEntryDisplay = memo(function HistoryEntryDisplay({
   entry,
   skipLinesTop = 0,
   skipLinesBottom = 0,
@@ -197,4 +198,4 @@ function HistoryEntryDisplay({
       })}
     </Box>
   );
-}
+});
