@@ -385,9 +385,9 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     args: [
       {
         name: 'action',
-        description: 'Action: tail, stop, clear, or count',
+        description: 'Action: on, off, clear, or count',
         required: false,
-        choices: ['tail', 'stop', 'clear'],
+        choices: ['on', 'off', 'clear'],
       },
       {
         name: 'count',
@@ -404,7 +404,7 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
         return { output: 'Log history cleared', success: true };
       }
 
-      if (actionOrCount === 'tail') {
+      if (actionOrCount === 'on') {
         if (_logStreamUnsubscribe) {
           return { output: 'Log streaming already active', success: false };
         }
@@ -418,17 +418,17 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
           _logStreamCallback?.(`[LOG] ${formatted}`);
         });
 
-        return { output: 'Log streaming started. Use "logs stop" to stop.', success: true };
+        return { output: 'Log streaming enabled. Use "logs off" to disable.', success: true };
       }
 
-      if (actionOrCount === 'stop') {
+      if (actionOrCount === 'off') {
         if (!_logStreamUnsubscribe) {
           return { output: 'Log streaming not active', success: false };
         }
 
         _logStreamUnsubscribe();
         _logStreamUnsubscribe = null;
-        return { output: 'Log streaming stopped', success: true };
+        return { output: 'Log streaming disabled', success: true };
       }
 
       const count = actionOrCount ? parseInt(actionOrCount, 10) : 20;
@@ -441,7 +441,7 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
         return { output: 'No log entries', success: true };
       }
 
-      const streamStatus = _logStreamUnsubscribe ? ' (streaming active)' : '';
+      const streamStatus = _logStreamUnsubscribe ? ' (streaming on)' : '';
       const lines = [
         `Tool call logs (${logs.length} of ${toolCallLogger.getCount()} total)${streamStatus}:`,
         '',

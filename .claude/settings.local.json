@@ -6,7 +6,12 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "Bash(npm config:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cat:*)",
+      "Bash(npm version:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit:*)",
+      "Bash(npm publish:*)"
     ],
     "deny": [],
     "ask": []
