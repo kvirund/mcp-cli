@@ -21,6 +21,34 @@ export function setMcpStatusCallback(
   _mcpStatusCallback = callback;
 }
 
+// Callback for streaming logs to UI
+let _logStreamCallback: ((message: string) => void) | null = null;
+let _logStreamUnsubscribe: (() => void) | null = null;
+
+export function setLogStreamCallback(callback: (message: string) => void): void {
+  _logStreamCallback = callback;
+}
+
+/**
+ * Initialize log streaming based on config
+ * @param streamByDefault - whether to enable streaming by default
+ */
+export function initLogStreaming(streamByDefault: boolean): void {
+  if (streamByDefault && _logStreamCallback && !_logStreamUnsubscribe) {
+    _logStreamUnsubscribe = toolCallLogger.subscribe((entry) => {
+      const formatted = ToolCallLogger.formatEntry(entry);
+      _logStreamCallback?.(`[LOG] ${formatted}`);
+    });
+  }
+}
+
+/**
+ * Check if log streaming is active
+ */
+export function isLogStreamingActive(): boolean {
+  return _logStreamUnsubscribe !== null;
+}
+
 /**
  * Create built-in commands
  * These need access to PluginManager, so we create them dynamically
@@ -357,9 +385,9 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     args: [
       {
         name: 'action',
-        description: 'Action: show count or clear',
+        description: 'Action: tail, stop, clear, or count',
         required: false,
-        choices: ['clear'],
+        choices: ['tail', 'stop', 'clear'],
       },
       {
         name: 'count',
@@ -376,6 +404,33 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
         return { output: 'Log history cleared', success: true };
       }
 
+      if (actionOrCount === 'tail') {
+        if (_logStreamUnsubscribe) {
+          return { output: 'Log streaming already active', success: false };
+        }
+
+        if (!_logStreamCallback) {
+          return { output: 'Log streaming not available', success: false };
+        }
+
+        _logStreamUnsubscribe = toolCallLogger.subscribe((entry) => {
+          const formatted = ToolCallLogger.formatEntry(entry);
+          _logStreamCallback?.(`[LOG] ${formatted}`);
+        });
+
+        return { output: 'Log streaming started. Use "logs stop" to stop.', success: true };
+      }
+
+      if (actionOrCount === 'stop') {
+        if (!_logStreamUnsubscribe) {
+          return { output: 'Log streaming not active', success: false };
+        }
+
+        _logStreamUnsubscribe();
+        _logStreamUnsubscribe = null;
+        return { output: 'Log streaming stopped', success: true };
+      }
+
       const count = actionOrCount ? parseInt(actionOrCount, 10) : 20;
       if (isNaN(count) || count < 1) {
         return { output: 'Invalid count', success: false };
@@ -386,8 +441,9 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
         return { output: 'No log entries', success: true };
       }
 
+      const streamStatus = _logStreamUnsubscribe ? ' (streaming active)' : '';
       const lines = [
-        `Tool call logs (${logs.length} of ${toolCallLogger.getCount()} total):`,
+        `Tool call logs (${logs.length} of ${toolCallLogger.getCount()} total)${streamStatus}:`,
         '',
         ...logs.map((entry) => ToolCallLogger.formatEntry(entry)),
       ];

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Box, useApp, useStdout } from 'ink';
 import { StatusBar, History, CommandInput } from './components/index.js';
 import { useAppState } from './state.js';
-import { commandRegistry, registerBuiltinCommands, setMcpStatusCallback } from './commands/index.js';
+import { commandRegistry, registerBuiltinCommands, setMcpStatusCallback, setLogStreamCallback, initLogStreaming } from './commands/index.js';
 import { startSseServer } from './mcp/sse-transport.js';
 import { DEFAULT_MCP_PORT } from './config.js';
 import type { PluginManager } from './plugin/manager.js';
@@ -53,6 +53,18 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
       });
     });
 
+    // Set up log stream callback
+    setLogStreamCallback((message) => {
+      addHistory({
+        command: '',
+        output: message,
+        success: true,
+      });
+    });
+
+    // Initialize log streaming based on config (default: off)
+    initLogStreaming(config?.logging?.streamByDefault ?? false);
+
     // Auto-start MCP server
     const port = config?.mcp?.port ?? DEFAULT_MCP_PORT;
     startSseServer({
@@ -74,7 +86,7 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
           success: false,
         });
       });
-  }, [pluginManager, setMcp, addHistory]);
+  }, [pluginManager, setMcp, addHistory, config]);
 
   // Get terminal dimensions
   const terminalHeight = stdout?.rows || 24;

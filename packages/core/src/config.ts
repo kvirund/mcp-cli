@@ -22,6 +22,11 @@ export interface McpConfig {
   port?: number;
 }
 
+export interface LoggingConfig {
+  /** Enable log streaming to screen by default (default: false) */
+  streamByDefault?: boolean;
+}
+
 /**
  * Config format where plugins is a dictionary.
  * Key = plugin name (used for tool prefixes, commands, etc.)
@@ -30,6 +35,7 @@ export interface McpConfig {
 export interface Config {
   plugins: Record<string, PluginEntry>;
   mcp?: McpConfig;
+  logging?: LoggingConfig;
 }
 
 export const DEFAULT_MCP_PORT = 3000;
