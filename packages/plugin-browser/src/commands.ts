@@ -351,11 +351,29 @@ export const browserCommands: Command[] = [
   {
     name: 'html',
     description: 'Get HTML content of page or element',
-    args: [{ name: 'selector', description: 'CSS selector (optional)', required: false }],
+    args: [
+      { name: 'selector', description: 'CSS selector (optional)', required: false },
+      { name: 'output', description: 'Save to file', required: false, choices: ['-o'] },
+    ],
     async execute(args): Promise<CommandResult> {
-      const [selector] = args;
+      const outputIdx = args.indexOf('-o');
+      let selector: string | undefined;
+      let outputPath: string | undefined;
+
+      if (outputIdx !== -1) {
+        outputPath = args[outputIdx + 1];
+        selector = args.slice(0, outputIdx).join(' ') || undefined;
+      } else {
+        selector = args[0] || undefined;
+      }
+
       try {
         const html = await cdp.getHTML(selector);
+        if (outputPath) {
+          const resolvedPath = resolve(outputPath);
+          await writeFile(resolvedPath, html);
+          return { output: `HTML saved to ${resolvedPath} (${html.length} bytes)`, success: true };
+        }
         return { output: html, success: true };
       } catch (error) {
         return {
@@ -369,11 +387,29 @@ export const browserCommands: Command[] = [
   {
     name: 'text',
     description: 'Get text content of page or element',
-    args: [{ name: 'selector', description: 'CSS selector (optional)', required: false }],
+    args: [
+      { name: 'selector', description: 'CSS selector (optional)', required: false },
+      { name: 'output', description: 'Save to file', required: false, choices: ['-o'] },
+    ],
     async execute(args): Promise<CommandResult> {
-      const [selector] = args;
+      const outputIdx = args.indexOf('-o');
+      let selector: string | undefined;
+      let outputPath: string | undefined;
+
+      if (outputIdx !== -1) {
+        outputPath = args[outputIdx + 1];
+        selector = args.slice(0, outputIdx).join(' ') || undefined;
+      } else {
+        selector = args[0] || undefined;
+      }
+
       try {
         const text = await cdp.getText(selector);
+        if (outputPath) {
+          const resolvedPath = resolve(outputPath);
+          await writeFile(resolvedPath, text);
+          return { output: `Text saved to ${resolvedPath} (${text.length} bytes)`, success: true };
+        }
         return { output: text, success: true };
       } catch (error) {
         return {

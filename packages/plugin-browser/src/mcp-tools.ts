@@ -189,11 +189,22 @@ export const browserMcpTools: McpTool[] = [
           type: 'string',
           description: 'CSS selector (optional, defaults to full page)',
         },
+        outputPath: {
+          type: 'string',
+          description: 'Path to save HTML to file (optional)',
+        },
       },
     },
     async handler(params) {
       const selector = params.selector as string | undefined;
-      return await cdp.getHTML(selector);
+      const outputPath = params.outputPath as string | undefined;
+      const html = await cdp.getHTML(selector);
+      if (outputPath) {
+        const resolvedPath = resolve(outputPath);
+        await writeFile(resolvedPath, html);
+        return `HTML saved to ${resolvedPath} (${html.length} bytes)`;
+      }
+      return html;
     },
   },
 
@@ -207,11 +218,22 @@ export const browserMcpTools: McpTool[] = [
           type: 'string',
           description: 'CSS selector (optional, defaults to full page)',
         },
+        outputPath: {
+          type: 'string',
+          description: 'Path to save text to file (optional)',
+        },
       },
     },
     async handler(params) {
       const selector = params.selector as string | undefined;
-      return await cdp.getText(selector);
+      const outputPath = params.outputPath as string | undefined;
+      const text = await cdp.getText(selector);
+      if (outputPath) {
+        const resolvedPath = resolve(outputPath);
+        await writeFile(resolvedPath, text);
+        return `Text saved to ${resolvedPath} (${text.length} bytes)`;
+      }
+      return text;
     },
   },
 
