@@ -3,7 +3,7 @@
  */
 
 import { EventEmitter } from 'events';
-import type { Plugin, PluginModule, McpTool } from './types.js';
+import type { Plugin, PluginModule, PluginFactory, McpTool } from './types.js';
 import type { RegisteredCommand } from '../commands/types.js';
 import { createPluginContext } from './context.js';
 
@@ -38,6 +38,14 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
+   * Check if a value is a plugin factory function
+   */
+  private isPluginFactory(value: Plugin | PluginFactory): value is PluginFactory {
+    // Factory functions don't have manifest property
+    return typeof value === 'function' && !('manifest' in value);
+  }
+
+  /**
    * Load a plugin from an npm package with a specific name
    * @param pluginName - The name to register the plugin under (from config key)
    * @param packageName - The npm package name to import
@@ -46,7 +54,10 @@ export class PluginManager extends EventEmitter {
     try {
       // Dynamic import
       const module = (await import(packageName)) as PluginModule;
-      const plugin = module.default;
+      const exported = module.default;
+
+      // If it's a factory function, call it to create a new instance
+      const plugin = this.isPluginFactory(exported) ? exported() : exported;
 
       // Validate
       this.validatePlugin(plugin, packageName);

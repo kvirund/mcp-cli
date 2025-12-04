@@ -129,8 +129,15 @@ export interface Plugin {
 }
 
 /**
+ * Plugin factory function type
+ * Used when a plugin needs multiple independent instances (e.g., proxy plugin)
+ */
+export type PluginFactory = () => Plugin;
+
+/**
  * Plugin module default export type
+ * Can be either a Plugin object or a factory function that creates Plugin instances
  */
 export type PluginModule = {
-  default: Plugin;
+  default: Plugin | PluginFactory;
 };
