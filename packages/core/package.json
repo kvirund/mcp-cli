@@ -1,6 +1,6 @@
 {
   "name": "@kvirund/mcp-cli",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Universal CLI framework with plugin system for MCP servers",
   "author": "kvirund",
   "license": "MIT",
@@ -9,7 +9,12 @@
     "url": "https://github.com/kvirund/mcp-cli.git",
     "directory": "packages/core"
   },
-  "keywords": ["mcp", "cli", "model-context-protocol", "plugin"],
+  "keywords": [
+    "mcp",
+    "cli",
+    "model-context-protocol",
+    "plugin"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
