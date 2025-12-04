@@ -58,7 +58,7 @@ mcp-cli serve --mode sse --port 3000
 | `help [topic]` | `?`, `h` | Show help for commands or plugins |
 | `plugins [action] [name]` | `plugin`, `pl` | Manage plugins (list, enable, disable) |
 | `tools [action] [plugin] [tool]` | `tool` | Manage plugin tools (list, enable, disable) |
-| `logs [count\|clear]` | `log` | View MCP tool call logs |
+| `logs [action\|count]` | `log` | View/stream MCP tool call logs |
 | `serve [port]` | `mcp` | Start MCP SSE server |
 | `stop` | | Stop MCP SSE server |
 | `clear` | `cls` | Clear screen |
@@ -182,7 +182,7 @@ tools enable browser screenshot
 
 ## Tool Call Logging
 
-View history of MCP tool invocations:
+View and stream MCP tool invocations:
 
 ```bash
 # Show last 20 log entries
@@ -191,8 +191,24 @@ logs
 # Show last 50 entries
 logs 50
 
+# Enable real-time log streaming
+logs on
+
+# Disable log streaming
+logs off
+
 # Clear log history
 logs clear
+```
+
+Configure default streaming state in config:
+
+```json
+{
+  "logging": {
+    "streamByDefault": true
+  }
+}
 ```
 
 ## Development

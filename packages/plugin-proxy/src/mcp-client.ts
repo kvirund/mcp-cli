@@ -37,6 +37,8 @@ export class McpClient {
   private config: McpServerConfig;
   private tools: McpToolInfo[] = [];
   private connected = false;
+  private lastError: string | null = null;
+  private stderrOutput: string[] = [];
 
   constructor(config: McpServerConfig) {
     this.config = config;
@@ -50,22 +52,42 @@ export class McpClient {
     return this.tools;
   }
 
+  getLastError(): string | null {
+    return this.lastError;
+  }
+
+  getStderrOutput(): string[] {
+    return this.stderrOutput;
+  }
+
+  getConfig(): McpServerConfig {
+    return this.config;
+  }
+
   async connect(): Promise<void> {
     if (this.connected) {
       throw new Error('Already connected');
     }
 
-    if (this.config.url) {
-      await this.connectSSE();
-    } else if (this.config.command) {
-      await this.connectStdio();
-    } else {
-      throw new Error('No connection method specified (need url or command)');
-    }
+    this.lastError = null;
+    this.stderrOutput = [];
 
-    // Fetch available tools
-    await this.refreshTools();
-    this.connected = true;
+    try {
+      if (this.config.url) {
+        await this.connectSSE();
+      } else if (this.config.command) {
+        await this.connectStdio();
+      } else {
+        throw new Error('No connection method specified (need url or command)');
+      }
+
+      // Fetch available tools
+      await this.refreshTools();
+      this.connected = true;
+    } catch (error) {
+      this.lastError = error instanceof Error ? error.message : String(error);
+      throw error;
+    }
   }
 
   private async connectStdio(): Promise<void> {

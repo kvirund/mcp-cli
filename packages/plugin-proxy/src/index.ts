@@ -163,6 +163,10 @@ function createProxyPlugin(): Plugin {
           }
 
           if (!mcpClient.isConnected()) {
+            const lastError = mcpClient.getLastError();
+            if (lastError) {
+              return { output: `Not connected (last error: ${lastError})`, success: true };
+            }
             return { output: 'Not connected', success: true };
           }
 
@@ -177,6 +181,40 @@ function createProxyPlugin(): Plugin {
           return { output: lines.join('\n'), success: true };
         },
       },
+      {
+        name: 'debug',
+        description: 'Show debug information (config, errors, stderr)',
+        async execute(): Promise<CommandResult> {
+          if (!mcpClient) {
+            return { output: 'Plugin not initialized', success: false };
+          }
+
+          const config = mcpClient.getConfig();
+          const lastError = mcpClient.getLastError();
+          const stderr = mcpClient.getStderrOutput();
+
+          const lines = [
+            'Debug Information:',
+            '',
+            'Config:',
+            `  command: ${config.command || '(none)'}`,
+            `  args: ${config.args?.join(' ') || '(none)'}`,
+            `  url: ${config.url || '(none)'}`,
+            `  autoConnect: ${config.autoConnect ?? false}`,
+            `  env: ${config.env ? Object.keys(config.env).join(', ') : '(none)'}`,
+            '',
+            `Connected: ${mcpClient.isConnected()}`,
+            `Last error: ${lastError || '(none)'}`,
+          ];
+
+          if (stderr.length > 0) {
+            lines.push('', 'Stderr output (last 10 lines):');
+            lines.push(...stderr.slice(-10).map((l) => `  ${l}`));
+          }
+
+          return { output: lines.join('\n'), success: true };
+        },
+      },
     ],
 
     getStatus(): PluginStatus {
@@ -187,6 +225,12 @@ function createProxyPlugin(): Plugin {
       if (mcpClient.isConnected()) {
         const tools = mcpClient.getTools();
         return { indicator: 'green', text: `${tools.length} tools` };
+      }
+
+      // Show error indicator if there was a connection error
+      const lastError = mcpClient.getLastError();
+      if (lastError) {
+        return { indicator: 'red', text: 'error' };
       }
 
       return { indicator: 'gray', text: 'disconnected' };
@@ -214,7 +258,8 @@ function createProxyPlugin(): Plugin {
             content: `  connect     - Connect to the MCP server
   disconnect  - Disconnect from the server
   restart     - Restart connection (disconnect + connect)
-  status      - Show connection status and tools`,
+  status      - Show connection status and tools
+  debug       - Show debug info (config, errors, stderr)`,
           },
           {
             title: 'Config options',
