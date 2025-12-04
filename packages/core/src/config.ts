@@ -9,13 +9,15 @@ import { homedir } from 'os';
 /**
  * Plugin entry can be:
  * - string: just the package name
- * - object: package name with config
+ * - object: package name with config and disabled tools
  */
 export type PluginEntry =
   | string
   | {
       name: string;
       config?: Record<string, unknown>;
+      /** List of tool names to disable (without plugin prefix) */
+      disabledTools?: string[];
     };
 
 export interface McpConfig {
@@ -35,6 +37,8 @@ export const DEFAULT_MCP_PORT = 3000;
 export interface NormalizedConfig {
   pluginPackages: string[];
   pluginConfigs: Record<string, Record<string, unknown>>;
+  /** Disabled tools per plugin (plugin name -> array of tool names without prefix) */
+  disabledTools: Record<string, string[]>;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -89,6 +93,7 @@ export async function ensureConfigExists(): Promise<Config> {
 export function normalizeConfig(config: Config): NormalizedConfig {
   const pluginPackages: string[] = [];
   const pluginConfigs: Record<string, Record<string, unknown>> = {};
+  const disabledTools: Record<string, string[]> = {};
 
   for (const entry of config.plugins) {
     if (typeof entry === 'string') {
@@ -97,16 +102,21 @@ export function normalizeConfig(config: Config): NormalizedConfig {
     } else {
       // Object entry with name and optional config
       pluginPackages.push(entry.name);
+      const pluginName = extractPluginName(entry.name);
+
       if (entry.config) {
         // Extract plugin name from package name for config mapping
         // e.g., "@kvirund/mcp-cli-plugin-nasa-apod" -> "nasa-apod"
-        const pluginName = extractPluginName(entry.name);
         pluginConfigs[pluginName] = entry.config;
+      }
+
+      if (entry.disabledTools && entry.disabledTools.length > 0) {
+        disabledTools[pluginName] = entry.disabledTools;
       }
     }
   }
 
-  return { pluginPackages, pluginConfigs };
+  return { pluginPackages, pluginConfigs, disabledTools };
 }
 
 /**

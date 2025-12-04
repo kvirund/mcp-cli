@@ -261,7 +261,95 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     },
   };
 
-  return [helpCommand, pluginsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
+  const toolsCommand: Command = {
+    name: 'tools',
+    description: 'Manage plugin tools',
+    aliases: ['tool'],
+    args: [
+      {
+        name: 'action',
+        description: 'Action: list, enable, disable',
+        required: false,
+        choices: ['list', 'enable', 'disable'],
+      },
+      {
+        name: 'plugin',
+        description: 'Plugin name',
+        required: false,
+      },
+      {
+        name: 'tool',
+        description: 'Tool name (without plugin prefix)',
+        required: false,
+      },
+    ],
+
+    async execute(args: string[]): Promise<CommandResult> {
+      const [action, pluginName, toolName] = args;
+
+      if (!action || action === 'list') {
+        return listTools(pluginManager, pluginName);
+      }
+
+      if (!pluginName) {
+        return {
+          output: `Usage: tools ${action} <plugin> <tool>`,
+          success: false,
+        };
+      }
+
+      if (!toolName) {
+        return {
+          output: `Usage: tools ${action} ${pluginName} <tool>`,
+          success: false,
+        };
+      }
+
+      if (!pluginManager.has(pluginName)) {
+        return {
+          output: `Plugin not found: ${pluginName}`,
+          success: false,
+        };
+      }
+
+      if (action === 'enable') {
+        try {
+          pluginManager.enableTool(pluginName, toolName);
+          return {
+            output: `Tool '${pluginName}_${toolName}' enabled`,
+            success: true,
+          };
+        } catch (error) {
+          return {
+            output: `Failed to enable tool: ${error instanceof Error ? error.message : error}`,
+            success: false,
+          };
+        }
+      }
+
+      if (action === 'disable') {
+        try {
+          pluginManager.disableTool(pluginName, toolName);
+          return {
+            output: `Tool '${pluginName}_${toolName}' disabled`,
+            success: true,
+          };
+        } catch (error) {
+          return {
+            output: `Failed to disable tool: ${error instanceof Error ? error.message : error}`,
+            success: false,
+          };
+        }
+      }
+
+      return {
+        output: `Unknown action: ${action}\nAvailable actions: list, enable, disable`,
+        success: false,
+      };
+    },
+  };
+
+  return [helpCommand, pluginsCommand, toolsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
 }
 
 /**
@@ -403,6 +491,72 @@ function listPlugins(pluginManager: PluginManager): CommandResult {
 
   lines.push('');
   lines.push("Use 'plugins enable <name>' or 'plugins disable <name>' to toggle.");
+
+  return {
+    output: lines.join('\n'),
+    success: true,
+  };
+}
+
+function listTools(pluginManager: PluginManager, pluginName?: string): CommandResult {
+  const plugins = pluginManager.getAll();
+
+  if (plugins.size === 0) {
+    return {
+      output: 'No plugins loaded.',
+      success: true,
+    };
+  }
+
+  const lines: string[] = [];
+
+  // Filter by plugin if specified
+  let pluginsToShow: Map<string, { plugin: import('../plugin/types.js').Plugin; enabled: boolean; disabledTools: Set<string> }>;
+  if (pluginName) {
+    const info = plugins.get(pluginName);
+    if (!info) {
+      return {
+        output: `Plugin not found: ${pluginName}`,
+        success: false,
+      };
+    }
+    pluginsToShow = new Map([[pluginName, info]]);
+  } else {
+    pluginsToShow = plugins;
+  }
+
+  let hasAnyTools = false;
+
+  for (const [name, info] of pluginsToShow) {
+    if (!info.enabled) {
+      lines.push(`${name}: (disabled)`);
+      continue;
+    }
+
+    const tools = pluginManager.getPluginTools(name);
+    if (tools.length === 0) {
+      lines.push(`${name}: (no tools)`);
+      continue;
+    }
+
+    hasAnyTools = true;
+    lines.push(`${name}:`);
+    for (const tool of tools) {
+      const status = tool.enabled ? '●' : '○';
+      const statusText = tool.enabled ? '' : ' [disabled]';
+      lines.push(`  ${status} ${name}_${tool.name}${statusText}`);
+    }
+  }
+
+  if (!hasAnyTools && !pluginName) {
+    return {
+      output: 'No plugin tools available.',
+      success: true,
+    };
+  }
+
+  lines.push('');
+  lines.push("Use 'tools enable <plugin> <tool>' or 'tools disable <plugin> <tool>' to toggle.");
 
   return {
     output: lines.join('\n'),

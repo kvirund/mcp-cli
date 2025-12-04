@@ -27,6 +27,7 @@ program
     const normalized = normalizeConfig(config);
     const pluginManager = new PluginManager({
       plugins: normalized.pluginConfigs,
+      disabledTools: normalized.disabledTools,
     });
 
     // Load plugins from config or command line
@@ -67,6 +68,7 @@ program
     const normalized = normalizeConfig(config);
     const pluginManager = new PluginManager({
       plugins: normalized.pluginConfigs,
+      disabledTools: normalized.disabledTools,
     });
 
     // Load plugins

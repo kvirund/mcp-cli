@@ -18,10 +18,14 @@ export interface PluginManagerEvents {
 export interface PluginInfo {
   plugin: Plugin;
   enabled: boolean;
+  /** Set of disabled tool names (without plugin prefix) */
+  disabledTools: Set<string>;
 }
 
 export interface PluginManagerConfig {
   plugins?: Record<string, Record<string, unknown>>;
+  /** Disabled tools per plugin (plugin name -> array of tool names without prefix) */
+  disabledTools?: Record<string, string[]>;
 }
 
 export class PluginManager extends EventEmitter {
@@ -63,8 +67,12 @@ export class PluginManager extends EventEmitter {
       // Initialize
       await plugin.init(context);
 
+      // Get disabled tools from config
+      const disabledToolsArray = this.config.disabledTools?.[name] ?? [];
+      const disabledTools = new Set(disabledToolsArray);
+
       // Store plugin
-      this.plugins.set(name, { plugin, enabled: true });
+      this.plugins.set(name, { plugin, enabled: true, disabledTools });
 
       this.emit('pluginLoaded', name);
     } catch (error) {
@@ -242,7 +250,7 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * Get all MCP tools from enabled plugins
+   * Get all MCP tools from enabled plugins (excluding disabled tools)
    */
   getMcpTools(): Array<McpTool & { _plugin: string }> {
     const tools: Array<McpTool & { _plugin: string }> = [];
@@ -252,6 +260,9 @@ export class PluginManager extends EventEmitter {
 
       const pluginTools = info.plugin.getMcpTools?.() ?? [];
       for (const tool of pluginTools) {
+        // Skip disabled tools
+        if (info.disabledTools.has(tool.name)) continue;
+
         tools.push({
           ...tool,
           // Prefix tool name with plugin name
@@ -262,6 +273,71 @@ export class PluginManager extends EventEmitter {
     }
 
     return tools;
+  }
+
+  /**
+   * Get all tools for a specific plugin (including disabled status)
+   */
+  getPluginTools(pluginName: string): Array<{ name: string; enabled: boolean }> {
+    const info = this.plugins.get(pluginName);
+    if (!info) return [];
+
+    const pluginTools = info.plugin.getMcpTools?.() ?? [];
+    return pluginTools.map((tool) => ({
+      name: tool.name,
+      enabled: !info.disabledTools.has(tool.name),
+    }));
+  }
+
+  /**
+   * Enable a specific tool for a plugin
+   */
+  enableTool(pluginName: string, toolName: string): void {
+    const info = this.plugins.get(pluginName);
+    if (!info) {
+      throw new Error(`Plugin not found: ${pluginName}`);
+    }
+
+    info.disabledTools.delete(toolName);
+    this.emit('stateChange', pluginName);
+  }
+
+  /**
+   * Disable a specific tool for a plugin
+   */
+  disableTool(pluginName: string, toolName: string): void {
+    const info = this.plugins.get(pluginName);
+    if (!info) {
+      throw new Error(`Plugin not found: ${pluginName}`);
+    }
+
+    // Verify tool exists
+    const pluginTools = info.plugin.getMcpTools?.() ?? [];
+    const toolExists = pluginTools.some((t) => t.name === toolName);
+    if (!toolExists) {
+      throw new Error(`Tool not found: ${toolName} in plugin ${pluginName}`);
+    }
+
+    info.disabledTools.add(toolName);
+    this.emit('stateChange', pluginName);
+  }
+
+  /**
+   * Check if a tool is enabled
+   */
+  isToolEnabled(pluginName: string, toolName: string): boolean {
+    const info = this.plugins.get(pluginName);
+    if (!info) return false;
+    return !info.disabledTools.has(toolName);
+  }
+
+  /**
+   * Get disabled tools for a plugin
+   */
+  getDisabledTools(pluginName: string): string[] {
+    const info = this.plugins.get(pluginName);
+    if (!info) return [];
+    return Array.from(info.disabledTools);
   }
 
   /**
