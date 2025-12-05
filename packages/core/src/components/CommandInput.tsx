@@ -118,8 +118,8 @@ export function CommandInput({
           return;
         }
 
-        // Special handling for 'tool' command - call MCP tools
-        if (cmdName === 'tool' || cmdName === 't') {
+        // Special handling for 'call' command - call MCP tools
+        if (cmdName === 'call' || cmdName === 'c') {
           // Level 1: tool [TAB] → list plugins
           if (argIndex === 0) {
             const pluginNames = pluginManager.getEnabledPluginNames();

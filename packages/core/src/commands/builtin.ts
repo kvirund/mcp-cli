@@ -449,10 +449,10 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     },
   };
 
-  const toolCommand: Command = {
-    name: 'tool',
+  const callCommand: Command = {
+    name: 'call',
     description: 'Call an MCP tool from a plugin',
-    aliases: ['t'],
+    aliases: ['c'],
     args: [
       { name: 'plugin', description: 'Plugin name', required: true },
       { name: 'tool_name', description: 'Tool name', required: true },
@@ -546,7 +546,7 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     },
   };
 
-  return [helpCommand, pluginsCommand, toolsCommand, toolCommand, logsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
+  return [helpCommand, pluginsCommand, toolsCommand, callCommand, logsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
 }
 
 /**
