@@ -5,18 +5,22 @@
 
 import { render } from 'ink';
 import { Command } from 'commander';
+import { createRequire } from 'module';
 import { App } from './App.js';
 import { PluginManager } from './plugin/manager.js';
 import { loadConfig, normalizeConfig, DEFAULT_MCP_PORT } from './config.js';
 import { startStdioServer } from './mcp/server.js';
 import { startSseServer, stopSseServer } from './mcp/sse-transport.js';
 
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json') as { version: string };
+
 const program = new Command();
 
 program
   .name('mcp-cli')
   .description('Universal CLI with plugin support for MCP servers')
-  .version('0.1.0');
+  .version(pkg.version);
 
 program
   .command('interactive', { isDefault: true })
@@ -82,7 +86,7 @@ program
       console.error('Starting MCP server in stdio mode...');
       await startStdioServer({
         name: 'mcp-cli',
-        version: '0.1.0',
+        version: pkg.version,
         pluginManager,
       });
     } else if (options.mode === 'sse') {
@@ -91,7 +95,7 @@ program
       await startSseServer({
         port,
         name: 'mcp-cli',
-        version: '0.1.0',
+        version: pkg.version,
         pluginManager,
       });
       console.error(`MCP SSE server running at http://localhost:${port}`);
