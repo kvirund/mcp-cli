@@ -1,6 +1,6 @@
 {
   "name": "@kvirund/mcp-cli-plugin-url-downloader",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "URL downloader plugin for MCP CLI - fetch URLs like curl",
   "repository": {
     "type": "git",
