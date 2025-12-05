@@ -1,6 +1,6 @@
 {
   "name": "@kvirund/mcp-cli",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "Universal CLI framework with plugin system for MCP servers",
   "author": "kvirund",
   "license": "MIT",

@@ -46,21 +46,9 @@ program
       }
     }
 
-    // Debug output
-    if (loadedPlugins.length > 0 || failedPlugins.length > 0) {
-      console.error(`[plugins] Loaded: ${loadedPlugins.join(', ') || '(none)'}`);
-      if (failedPlugins.length > 0) {
-        console.error(`[plugins] Failed: ${failedPlugins.join('; ')}`);
-      }
-      // Show CLI commands per plugin
-      for (const pluginName of loadedPlugins) {
-        const plugin = pluginManager.get(pluginName);
-        if (plugin) {
-          const exports = plugin.getExports();
-          const cliCmds = Object.values(exports).filter(e => e.type === 'cli').map(e => e.name);
-          console.error(`[${pluginName}] CLI commands: ${cliCmds.join(', ') || '(none)'}`);
-        }
-      }
+    // Log loaded/failed plugins
+    if (failedPlugins.length > 0) {
+      console.error(`[plugins] Failed: ${failedPlugins.join('; ')}`);
     }
 
     // Render the app with patchConsole disabled to reduce flickering
