@@ -47,7 +47,15 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
     });
 
     // Register plugin CLI commands with collision handling
-    for (const cmd of pluginManager.getCliCommands()) {
+    const cliCommands = pluginManager.getCliCommands();
+    if (cliCommands.length > 0) {
+      addHistory({
+        command: '',
+        output: `[debug] Registering ${cliCommands.length} plugin commands: ${cliCommands.map(c => `${c._plugin}:${c.name}`).join(', ')}`,
+        success: true,
+      });
+    }
+    for (const cmd of cliCommands) {
       commandRegistry.registerPluginCommand(cmd._plugin, cmd);
     }
 
