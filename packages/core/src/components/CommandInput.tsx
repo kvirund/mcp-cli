@@ -118,6 +118,68 @@ export function CommandInput({
           return;
         }
 
+        // Special handling for 'tool' command - call MCP tools
+        if (cmdName === 'tool' || cmdName === 't') {
+          // Level 1: tool [TAB] → list plugins
+          if (argIndex === 0) {
+            const pluginNames = pluginManager.getEnabledPluginNames();
+            const matches = pluginNames
+              .filter((name) => name.toLowerCase().startsWith(lastPart))
+              .slice(0, 5);
+            setSuggestions(matches);
+            setSelectedSuggestion(0);
+            return;
+          }
+
+          // Level 2: tool <plugin> [TAB] → list tools from plugin
+          if (argIndex === 1) {
+            const pluginName = parts[1];
+            const plugin = pluginManager.get(pluginName);
+            if (plugin) {
+              const exports = plugin.getExports();
+              const tools = Object.values(exports)
+                .filter((e) => e.type === 'tool')
+                .map((e) => e.name);
+              const matches = tools
+                .filter((name) => name.toLowerCase().startsWith(lastPart))
+                .slice(0, 5);
+              setSuggestions(matches);
+              setSelectedSuggestion(0);
+              return;
+            }
+          }
+
+          // Level 3+: tool <plugin> <tool> [TAB] → suggest parameter names from inputSchema
+          if (argIndex >= 2) {
+            const pluginName = parts[1];
+            const toolName = parts[2];
+            const plugin = pluginManager.get(pluginName);
+            if (plugin) {
+              const exports = plugin.getExports();
+              const tool = Object.values(exports).find(
+                (e) => e.type === 'tool' && e.name === toolName
+              );
+              if (tool && tool.type === 'tool' && tool.inputSchema?.properties) {
+                // Get already used parameter keys
+                const usedKeys = parts.slice(3).map((p) => p.split('=')[0]);
+                const availableKeys = Object.keys(tool.inputSchema.properties).filter(
+                  (k) => !usedKeys.includes(k)
+                );
+                // If user is typing a key (no '=' yet), suggest keys
+                if (!lastPart.includes('=')) {
+                  const matches = availableKeys
+                    .filter((k) => k.toLowerCase().startsWith(lastPart))
+                    .map((k) => k + '=')
+                    .slice(0, 5);
+                  setSuggestions(matches);
+                  setSelectedSuggestion(0);
+                  return;
+                }
+              }
+            }
+          }
+        }
+
         // Standard argument suggestions from command definition
         if (cmd?.args && argIndex < cmd.args.length) {
           const arg = cmd.args[argIndex];

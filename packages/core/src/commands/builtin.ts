@@ -449,7 +449,104 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     },
   };
 
-  return [helpCommand, pluginsCommand, toolsCommand, logsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
+  const toolCommand: Command = {
+    name: 'tool',
+    description: 'Call an MCP tool from a plugin',
+    aliases: ['t'],
+    args: [
+      { name: 'plugin', description: 'Plugin name', required: true },
+      { name: 'tool_name', description: 'Tool name', required: true },
+      { name: 'args', description: 'Tool arguments as key=value pairs', required: false },
+    ],
+
+    async execute(args: string[]): Promise<CommandResult> {
+      const [pluginNameArg, toolName, ...toolArgs] = args;
+
+      if (!pluginNameArg) {
+        const available = pluginManager.getPluginNames().join(', ') || '(none)';
+        return {
+          output: `Usage: tool <plugin> <tool_name> [key=value ...]\nAvailable plugins: ${available}`,
+          success: false,
+        };
+      }
+
+      if (!toolName) {
+        const plugin = pluginManager.get(pluginNameArg);
+        if (!plugin) {
+          const available = pluginManager.getPluginNames().join(', ') || '(none)';
+          return {
+            output: `Plugin not found: ${pluginNameArg}\nAvailable: ${available}`,
+            success: false,
+          };
+        }
+        const exports = plugin.getExports();
+        const tools = Object.values(exports)
+          .filter((e) => e.type === 'tool')
+          .map((e) => e.name);
+        return {
+          output: `Usage: tool ${pluginNameArg} <tool_name> [key=value ...]\nAvailable tools: ${tools.join(', ') || '(none)'}`,
+          success: false,
+        };
+      }
+
+      // Find plugin
+      const plugin = pluginManager.get(pluginNameArg);
+      if (!plugin) {
+        const available = pluginManager.getPluginNames().join(', ') || '(none)';
+        return {
+          output: `Plugin not found: ${pluginNameArg}\nAvailable: ${available}`,
+          success: false,
+        };
+      }
+
+      // Find tool in plugin exports
+      const exports = plugin.getExports();
+      const tool = Object.values(exports).find((e) => e.type === 'tool' && e.name === toolName);
+      if (!tool || tool.type !== 'tool') {
+        const tools = Object.values(exports)
+          .filter((e) => e.type === 'tool')
+          .map((e) => e.name);
+        return {
+          output: `Tool not found: ${toolName}\nAvailable tools in ${pluginNameArg}: ${tools.join(', ') || '(none)'}`,
+          success: false,
+        };
+      }
+
+      // Parse key=value arguments
+      const params: Record<string, unknown> = {};
+      for (const arg of toolArgs) {
+        const eqIndex = arg.indexOf('=');
+        if (eqIndex === -1) {
+          return {
+            output: `Invalid argument format: ${arg}\nExpected: key=value`,
+            success: false,
+          };
+        }
+        const key = arg.slice(0, eqIndex);
+        const value = arg.slice(eqIndex + 1);
+        // Try to parse as JSON, otherwise keep as string
+        try {
+          params[key] = JSON.parse(value);
+        } catch {
+          params[key] = value;
+        }
+      }
+
+      // Call the tool handler
+      try {
+        const result = await tool.handler(params);
+        const output = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+        return { output: `[${pluginNameArg}] ${output}`, success: true };
+      } catch (error) {
+        return {
+          output: `[${pluginNameArg}] Error: ${error instanceof Error ? error.message : error}`,
+          success: false,
+        };
+      }
+    },
+  };
+
+  return [helpCommand, pluginsCommand, toolsCommand, toolCommand, logsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
 }
 
 /**
