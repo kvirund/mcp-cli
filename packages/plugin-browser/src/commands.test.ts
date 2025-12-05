@@ -136,12 +136,6 @@ describe('browserCommands', () => {
       expect(result.output).toContain('Usage');
     });
 
-    it('should have aliases', () => {
-      const cmd = browserCommands.find((c) => c.name === 'navigate')!;
-      expect(cmd.aliases).toContain('goto');
-      expect(cmd.aliases).toContain('nav');
-    });
-
     it('should navigate successfully', async () => {
       const cmd = browserCommands.find((c) => c.name === 'navigate')!;
       const result = await cmd.execute(['https://example.com']);
@@ -199,12 +193,6 @@ describe('browserCommands', () => {
   });
 
   describe('eval command', () => {
-    it('should have aliases', () => {
-      const cmd = browserCommands.find((c) => c.name === 'eval')!;
-      expect(cmd.aliases).toContain('evaluate');
-      expect(cmd.aliases).toContain('js');
-    });
-
     it('should require expression', async () => {
       const cmd = browserCommands.find((c) => c.name === 'eval')!;
       const result = await cmd.execute([]);

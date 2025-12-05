@@ -11,7 +11,9 @@
       "Bash(npm version:*)",
       "Bash(git restore:*)",
       "Bash(git commit:*)",
-      "Bash(npm publish:*)"
+      "Bash(npm publish:*)",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest:*)"
     ],
     "deny": [],
     "ask": []

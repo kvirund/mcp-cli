@@ -59,30 +59,32 @@ class CommandRegistry {
   registerPluginCommand(pluginName: string, cmd: PluginCliCommand): void {
     const existing = this.commands.get(cmd.name);
 
-    // Check for collision with builtin command
-    if (existing && !existing._plugin) {
+    // Check for collision with builtin command (no _plugin and not a router)
+    if (existing && !existing._plugin && !this.collisions.has(cmd.name)) {
       this.log(`[${pluginName}] Warning: command '${cmd.name}' conflicts with builtin, ignored`);
       return;
     }
 
-    // Check for collision with another plugin's command
-    if (existing && existing._plugin) {
-      // Convert to router command if not already
-      if (!this.collisions.has(cmd.name)) {
-        // First collision - save the existing command
-        const existingCmd = this.getPluginCommandData(existing._plugin, cmd.name);
-        if (existingCmd) {
-          this.collisions.set(cmd.name, new Map([[existing._plugin, existingCmd]]));
-        } else {
-          this.collisions.set(cmd.name, new Map());
-        }
-
-        // Replace with router command
+    // Check for collision with another plugin's command (or existing router)
+    if (existing && (existing._plugin || this.collisions.has(cmd.name))) {
+      // First real collision (two plugins with same command) - convert to router
+      const collisionMap = this.collisions.get(cmd.name);
+      if (collisionMap && collisionMap.size === 1) {
+        // Replace direct command with router command
         this.commands.set(cmd.name, this.createRouterCommand(cmd.name));
       }
 
       // Add the new plugin's command to collisions
-      this.collisions.get(cmd.name)!.set(pluginName, cmd);
+      if (collisionMap) {
+        collisionMap.set(pluginName, cmd);
+      } else if (existing._plugin) {
+        // Shouldn't happen, but handle gracefully
+        this.collisions.set(cmd.name, new Map([
+          [existing._plugin, cmd], // Note: we lose original cmd data here
+          [pluginName, cmd],
+        ]));
+        this.commands.set(cmd.name, this.createRouterCommand(cmd.name));
+      }
       return;
     }
 
@@ -103,9 +105,7 @@ class CommandRegistry {
     });
 
     // Store command data for potential future collisions
-    if (!this.collisions.has(cmd.name)) {
-      this.collisions.set(cmd.name, new Map([[pluginName, cmd]]));
-    }
+    this.collisions.set(cmd.name, new Map([[pluginName, cmd]]));
   }
 
   /**
