@@ -34,11 +34,23 @@ program
     });
 
     // Load plugins from config
+    const loadedPlugins: string[] = [];
+    const failedPlugins: string[] = [];
     for (const [pluginName, packageName] of Object.entries(normalized.plugins)) {
       try {
         await pluginManager.loadPlugin(pluginName, packageName);
+        loadedPlugins.push(pluginName);
       } catch (error) {
+        failedPlugins.push(`${pluginName}: ${error instanceof Error ? error.message : error}`);
         console.error(`Failed to load plugin ${pluginName}:`, error);
+      }
+    }
+
+    // Debug output
+    if (loadedPlugins.length > 0 || failedPlugins.length > 0) {
+      console.error(`[plugins] Loaded: ${loadedPlugins.join(', ') || '(none)'}`);
+      if (failedPlugins.length > 0) {
+        console.error(`[plugins] Failed: ${failedPlugins.join('; ')}`);
       }
     }
 
