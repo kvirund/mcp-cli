@@ -487,7 +487,11 @@ function formatGeneralHelp(pluginManager: PluginManager): CommandResult {
   if (pluginCmds.length > 0) {
     lines.push('');
     lines.push('Plugin Commands:');
+    const shown = new Set<string>();
     for (const cmd of pluginCmds) {
+      if (shown.has(cmd.name)) continue;
+      shown.add(cmd.name);
+
       if (commandRegistry.hasCollision(cmd.name)) {
         const plugins = commandRegistry.getCollisionPlugins(cmd.name);
         lines.push(`  ${cmd.name} <plugin> - ${cmd.description} (${plugins.join(', ')})`);
