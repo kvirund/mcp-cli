@@ -37,11 +37,18 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
   useEffect(() => {
     registerBuiltinCommands(pluginManager);
 
-    // Register plugin commands
-    for (const cmd of pluginManager.getCommands()) {
-      if (!commandRegistry.has(cmd.name)) {
-        commandRegistry.register(cmd);
-      }
+    // Set up log callback for command registry warnings
+    commandRegistry.setLogCallback((message) => {
+      addHistory({
+        command: '',
+        output: message,
+        success: false,
+      });
+    });
+
+    // Register plugin CLI commands with collision handling
+    for (const cmd of pluginManager.getCliCommands()) {
+      commandRegistry.registerPluginCommand(cmd._plugin, cmd);
     }
 
     // Set up MCP status callback
@@ -153,8 +160,6 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
     [pluginManager, addHistory, clearHistory, exit]
   );
 
-  const commands = commandRegistry.getAll();
-
   // Calculate available height for history
   const statusBarHeight = 3;
   const commandInputHeight = 3;
@@ -173,7 +178,6 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
         />
       </Box>
       <CommandInput
-        commands={commands}
         pluginManager={pluginManager}
         onSubmit={handleCommand}
         commandHistory={commandHistory}

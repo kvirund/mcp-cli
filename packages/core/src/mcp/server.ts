@@ -10,7 +10,6 @@ import {
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { PluginManager } from '../plugin/manager.js';
-import type { McpTool } from '../plugin/types.js';
 import { toolCallLogger } from './logger.js';
 
 export interface McpServerOptions {

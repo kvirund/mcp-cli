@@ -4,7 +4,7 @@
  * Provides browser automation via Chrome DevTools Protocol
  */
 
-import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@kvirund/mcp-cli';
+import type { Plugin, PluginContext, PluginStatus, PluginHelp, PluginExport } from '@kvirund/mcp-cli/plugin';
 import { browserCommands, setNotifyFn } from './commands.js';
 import { browserMcpTools } from './mcp-tools.js';
 import * as cdp from './cdp/index.js';
@@ -14,7 +14,7 @@ let context: PluginContext | null = null;
 const browserPlugin: Plugin = {
   manifest: {
     name: 'browser',
-    version: '0.1.0',
+    version: '0.2.0',
     description: 'Browser automation via Chrome DevTools Protocol',
   },
 
@@ -38,7 +38,21 @@ const browserPlugin: Plugin = {
     context?.log('Plugin disabled');
   },
 
-  commands: browserCommands,
+  getExports(): Record<string, PluginExport> {
+    const exports: Record<string, PluginExport> = {};
+
+    // CLI commands
+    for (const cmd of browserCommands) {
+      exports[cmd.name] = cmd;
+    }
+
+    // MCP tools
+    for (const tool of browserMcpTools) {
+      exports[`tool_${tool.name}`] = tool;
+    }
+
+    return exports;
+  },
 
   getStatus(): PluginStatus {
     if (!cdp.isConnected()) {
@@ -91,10 +105,6 @@ const browserPlugin: Plugin = {
         },
       ],
     };
-  },
-
-  getMcpTools() {
-    return browserMcpTools;
   },
 };
 

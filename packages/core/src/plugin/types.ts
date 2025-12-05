@@ -2,7 +2,9 @@
  * Plugin system types for MCP CLI
  */
 
-import type { Command, CommandResult } from '../commands/types.js';
+import type { CommandArg, CommandResult, AppState } from '../commands/types.js';
+// Re-export command types for plugin authors
+export type { CommandArg, CommandResult, AppState };
 
 /**
  * Plugin manifest - basic information about the plugin
@@ -42,9 +44,41 @@ export interface PluginHelp {
 }
 
 /**
- * MCP Tool definition
+ * Context provided to plugins during initialization
  */
-export interface McpTool {
+export interface PluginContext {
+  /** Notify core that plugin state has changed (triggers StatusBar update) */
+  notifyStateChange(): void;
+
+  /** Log a message (will be prefixed with plugin name) */
+  log(message: string): void;
+
+  /** Plugin configuration from config file */
+  config: Record<string, unknown>;
+}
+
+/**
+ * CLI command exported by a plugin
+ */
+export interface PluginCliCommand {
+  type: 'cli';
+  /** Command name */
+  name: string;
+  /** Description for help */
+  description: string;
+  /** Argument definitions */
+  args?: CommandArg[];
+  /** Subcommands for autocomplete (static list or dynamic function) */
+  subcommands?: string[] | (() => string[]);
+  /** Execute the command */
+  execute: (args: string[], state?: AppState) => Promise<CommandResult>;
+}
+
+/**
+ * MCP Tool exported by a plugin
+ */
+export interface PluginMcpTool {
+  type: 'tool';
   /** Tool name (will be prefixed with plugin name) */
   name: string;
   /** Tool description for LLM */
@@ -60,18 +94,9 @@ export interface McpTool {
 }
 
 /**
- * Context provided to plugins during initialization
+ * Union type for plugin exports
  */
-export interface PluginContext {
-  /** Notify core that plugin state has changed (triggers StatusBar update) */
-  notifyStateChange(): void;
-
-  /** Log a message (will be prefixed with plugin name) */
-  log(message: string): void;
-
-  /** Plugin configuration from config file */
-  config: Record<string, unknown>;
-}
+export type PluginExport = PluginCliCommand | PluginMcpTool;
 
 /**
  * Plugin interface that all plugins must implement
@@ -105,10 +130,10 @@ export interface Plugin {
   onDisable?(): Promise<void>;
 
   /**
-   * Commands provided by this plugin
-   * Automatically registered when plugin is loaded
+   * Get exports: CLI commands and MCP tools
+   * Key is the export name (used for registration)
    */
-  commands: Command[];
+  getExports(): Record<string, PluginExport>;
 
   /**
    * Get current status for StatusBar display
@@ -120,12 +145,6 @@ export interface Plugin {
    * Get help information for "help <plugin>" command
    */
   getHelp(): PluginHelp;
-
-  /**
-   * Get MCP tools provided by this plugin
-   * Optional - only needed if plugin provides MCP functionality
-   */
-  getMcpTools?(): McpTool[];
 }
 
 /**

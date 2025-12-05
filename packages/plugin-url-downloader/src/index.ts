@@ -4,23 +4,21 @@
  * Provides curl-like functionality for fetching URLs
  */
 
-import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@kvirund/mcp-cli';
+import type { Plugin, PluginContext, PluginStatus, PluginHelp, PluginExport } from '@kvirund/mcp-cli/plugin';
 import { urlDownloaderCommands } from './commands.js';
 import { urlDownloaderMcpTools } from './mcp-tools.js';
 
 let context: PluginContext | null = null;
-let requestCount = 0;
 
 const urlDownloaderPlugin: Plugin = {
   manifest: {
     name: 'url-downloader',
-    version: '0.1.0',
+    version: '0.2.0',
     description: 'Fetch URLs like curl - HTTP client for MCP CLI',
   },
 
   async init(ctx: PluginContext): Promise<void> {
     context = ctx;
-    requestCount = 0;
     ctx.log('Plugin initialized');
   },
 
@@ -36,7 +34,21 @@ const urlDownloaderPlugin: Plugin = {
     context?.log('Plugin disabled');
   },
 
-  commands: urlDownloaderCommands,
+  getExports(): Record<string, PluginExport> {
+    const exports: Record<string, PluginExport> = {};
+
+    // CLI commands
+    for (const cmd of urlDownloaderCommands) {
+      exports[cmd.name] = cmd;
+    }
+
+    // MCP tools
+    for (const tool of urlDownloaderMcpTools) {
+      exports[`tool_${tool.name}`] = tool;
+    }
+
+    return exports;
+  },
 
   getStatus(): PluginStatus {
     return {
@@ -78,10 +90,6 @@ const urlDownloaderPlugin: Plugin = {
         },
       ],
     };
-  },
-
-  getMcpTools() {
-    return urlDownloaderMcpTools;
   },
 };
 

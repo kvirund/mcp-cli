@@ -2,13 +2,14 @@
  * MCP tools for browser plugin
  */
 
-import type { McpTool } from '@kvirund/mcp-cli';
+import type { PluginMcpTool } from '@kvirund/mcp-cli/plugin';
 import * as cdp from './cdp/index.js';
 import { writeFile } from 'fs/promises';
 import { resolve } from 'path';
 
-export const browserMcpTools: McpTool[] = [
+export const browserMcpTools: PluginMcpTool[] = [
   {
+    type: 'tool',
     name: 'connect',
     description: 'Connect to a browser via Chrome DevTools Protocol',
     inputSchema: {
@@ -29,6 +30,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'disconnect',
     description: 'Disconnect from the browser',
     inputSchema: { type: 'object', properties: {} },
@@ -39,6 +41,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'list_tabs',
     description: 'List all open browser tabs',
     inputSchema: {
@@ -57,6 +60,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'navigate',
     description: 'Navigate to a URL in the current tab',
     inputSchema: {
@@ -75,6 +79,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'screenshot',
     description: 'Take a screenshot of the current page (full page by default)',
     inputSchema: {
@@ -94,6 +99,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'click',
     description: 'Click an element by CSS selector',
     inputSchema: {
@@ -111,6 +117,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'type',
     description: 'Type text into an element',
     inputSchema: {
@@ -130,6 +137,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'scroll',
     description: 'Scroll the page',
     inputSchema: {
@@ -153,6 +161,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'evaluate',
     description: 'Execute JavaScript in the browser',
     inputSchema: {
@@ -170,6 +179,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'get_page_info',
     description: 'Get current page title and URL',
     inputSchema: { type: 'object', properties: {} },
@@ -180,6 +190,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'get_html',
     description: 'Get HTML content of the page or element',
     inputSchema: {
@@ -209,6 +220,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'get_text',
     description: 'Get text content of the page or element',
     inputSchema: {
@@ -238,6 +250,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'reload',
     description: 'Reload the current page',
     inputSchema: {
@@ -254,6 +267,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'go_back',
     description: 'Go back in browser history',
     inputSchema: { type: 'object', properties: {} },
@@ -265,6 +279,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'go_forward',
     description: 'Go forward in browser history',
     inputSchema: { type: 'object', properties: {} },
@@ -276,6 +291,7 @@ export const browserMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'switch_tab',
     description: 'Switch to a different tab',
     inputSchema: {

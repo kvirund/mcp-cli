@@ -2,7 +2,7 @@
  * MCP tools for NASA APOD plugin
  */
 
-import type { McpTool } from '@kvirund/mcp-cli';
+import type { PluginMcpTool } from '@kvirund/mcp-cli/plugin';
 import { ResponseFormat } from './types.js';
 import { APOD_START_DATE, CHARACTER_LIMIT, MAX_ENTRIES, DEFAULT_RANDOM_COUNT } from './constants.js';
 import {
@@ -16,9 +16,6 @@ import {
   NasaApiError,
 } from './nasa-api.js';
 
-/**
- * Format error response with helpful suggestions
- */
 function formatError(error: unknown): string {
   if (error instanceof NasaApiError) {
     return error.suggestion
@@ -28,9 +25,6 @@ function formatError(error: unknown): string {
   return `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
 }
 
-/**
- * Truncate text if it exceeds character limit
- */
 function truncateIfNeeded(text: string): string {
   if (text.length <= CHARACTER_LIMIT) {
     return text;
@@ -38,8 +32,9 @@ function truncateIfNeeded(text: string): string {
   return text.slice(0, CHARACTER_LIMIT) + '\n\n... [Response truncated due to length]';
 }
 
-export const nasaApodMcpTools: McpTool[] = [
+export const nasaApodMcpTools: PluginMcpTool[] = [
   {
+    type: 'tool',
     name: 'apod_today',
     description: `Get today's NASA Astronomy Picture of the Day. Returns the daily featured astronomy image or video with its explanation.`,
     inputSchema: {
@@ -56,7 +51,7 @@ export const nasaApodMcpTools: McpTool[] = [
         },
       },
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const thumbs = (params.thumbs as boolean) || false;
         const format = (params.response_format as string) || 'markdown';
@@ -77,6 +72,7 @@ export const nasaApodMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'apod_by_date',
     description: `Get the Astronomy Picture of the Day for a specific date. NASA has published an APOD every day since ${APOD_START_DATE}.`,
     inputSchema: {
@@ -98,7 +94,7 @@ export const nasaApodMcpTools: McpTool[] = [
       },
       required: ['date'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const date = params.date as string;
         const thumbs = (params.thumbs as boolean) || false;
@@ -120,6 +116,7 @@ export const nasaApodMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'apod_range',
     description: 'Get all Astronomy Pictures of the Day within a date range.',
     inputSchema: {
@@ -145,7 +142,7 @@ export const nasaApodMcpTools: McpTool[] = [
       },
       required: ['start_date', 'end_date'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const startDate = params.start_date as string;
         const endDate = params.end_date as string;
@@ -179,6 +176,7 @@ export const nasaApodMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'apod_random',
     description: 'Get random Astronomy Pictures of the Day from the entire archive.',
     inputSchema: {
@@ -199,7 +197,7 @@ export const nasaApodMcpTools: McpTool[] = [
         },
       },
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const count = (params.count as number) || DEFAULT_RANDOM_COUNT;
         const thumbs = (params.thumbs as boolean) || false;
@@ -230,6 +228,7 @@ export const nasaApodMcpTools: McpTool[] = [
   },
 
   {
+    type: 'tool',
     name: 'apod_search',
     description:
       'Search the APOD archive by keyword. Searches titles and explanations for matching content.',
@@ -260,7 +259,7 @@ export const nasaApodMcpTools: McpTool[] = [
       },
       required: ['query'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const query = params.query as string;
         const startDate = params.start_date as string | undefined;

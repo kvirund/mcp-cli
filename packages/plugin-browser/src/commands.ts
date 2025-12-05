@@ -1,8 +1,8 @@
 /**
- * Browser plugin commands
+ * Browser plugin CLI commands
  */
 
-import type { Command, CommandResult } from '@kvirund/mcp-cli';
+import type { PluginCliCommand } from '@kvirund/mcp-cli/plugin';
 import * as cdp from './cdp/index.js';
 import { writeFile } from 'fs/promises';
 import { resolve } from 'path';
@@ -14,15 +14,16 @@ export function setNotifyFn(fn: NotifyFn): void {
   notifyStateChange = fn;
 }
 
-export const browserCommands: Command[] = [
+export const browserCommands: PluginCliCommand[] = [
   {
+    type: 'cli',
     name: 'connect',
     description: 'Connect to browser via Chrome DevTools Protocol',
     args: [
       { name: 'host', description: 'Browser host (default: localhost)', required: false },
       { name: 'port', description: 'Debug port (default: 9222)', required: false },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const [host = 'localhost', portStr = '9222'] = args;
       const port = parseInt(portStr, 10);
 
@@ -45,9 +46,10 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'disconnect',
     description: 'Disconnect from browser',
-    async execute(): Promise<CommandResult> {
+    async execute() {
       await cdp.disconnect();
       notifyStateChange();
       return { output: 'Disconnected from browser', success: true };
@@ -55,13 +57,14 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'tabs',
     description: 'List open browser tabs',
     args: [
       { name: 'host', description: 'Browser host', required: false },
       { name: 'port', description: 'Debug port', required: false },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const [host = 'localhost', portStr = '9222'] = args;
       const port = parseInt(portStr, 10);
 
@@ -88,10 +91,11 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'switch',
     description: 'Switch to a different tab',
     args: [{ name: 'tabId', description: 'Tab ID or title fragment', required: true }],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const [tabId] = args;
       if (!tabId) {
         return { output: 'Usage: switch <tabId or title>', success: false };
@@ -113,11 +117,11 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'navigate',
     description: 'Navigate to a URL',
-    aliases: ['goto', 'nav'],
     args: [{ name: 'url', description: 'URL to navigate to', required: true }],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const [url] = args;
       if (!url) {
         return { output: 'Usage: navigate <url>', success: false };
@@ -137,6 +141,7 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'reload',
     description: 'Reload the current page',
     args: [
@@ -147,7 +152,7 @@ export const browserCommands: Command[] = [
         choices: ['--no-cache'],
       },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const ignoreCache = args.includes('--no-cache');
       try {
         await cdp.reload(ignoreCache);
@@ -162,9 +167,10 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'back',
     description: 'Go back in browser history',
-    async execute(): Promise<CommandResult> {
+    async execute() {
       try {
         await cdp.goBack();
         const info = await cdp.getPageInfo();
@@ -179,9 +185,10 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'forward',
     description: 'Go forward in browser history',
-    async execute(): Promise<CommandResult> {
+    async execute() {
       try {
         await cdp.goForward();
         const info = await cdp.getPageInfo();
@@ -196,10 +203,11 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'click',
     description: 'Click an element by CSS selector',
     args: [{ name: 'selector', description: 'CSS selector', required: true }],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const [selector] = args;
       if (!selector) {
         return { output: 'Usage: click <selector>', success: false };
@@ -218,13 +226,14 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'type',
     description: 'Type text into an element',
     args: [
       { name: 'selector', description: 'CSS selector', required: true },
       { name: 'text', description: 'Text to type', required: true },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const [selector, ...textParts] = args;
       const text = textParts.join(' ');
 
@@ -245,6 +254,7 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'scroll',
     description: 'Scroll the page',
     args: [
@@ -256,7 +266,7 @@ export const browserCommands: Command[] = [
       },
       { name: 'amount', description: 'Scroll amount in pixels', required: false },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const [direction, amountStr] = args;
       if (!direction || !['up', 'down', 'top', 'bottom'].includes(direction)) {
         return { output: 'Usage: scroll <up|down|top|bottom> [amount]', success: false };
@@ -277,13 +287,14 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'screenshot',
     description: 'Take a screenshot (full page by default)',
     args: [
       { name: 'path', description: 'Output file path', required: false },
       { name: 'viewportOnly', description: 'Capture only viewport', required: false, choices: ['--viewport'] },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const fullPage = !args.includes('--viewport');
       const pathArg = args.find((a) => !a.startsWith('--'));
       const outputPath = resolve(pathArg || `screenshot-${Date.now()}.png`);
@@ -305,11 +316,11 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'eval',
     description: 'Execute JavaScript in the browser',
-    aliases: ['evaluate', 'js'],
     args: [{ name: 'expression', description: 'JavaScript expression', required: true }],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const expression = args.join(' ');
       if (!expression) {
         return { output: 'Usage: eval <expression>', success: false };
@@ -330,9 +341,10 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'info',
     description: 'Get current page info',
-    async execute(): Promise<CommandResult> {
+    async execute() {
       try {
         const info = await cdp.getPageInfo();
         return {
@@ -349,13 +361,14 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'html',
     description: 'Get HTML content of page or element',
     args: [
       { name: 'selector', description: 'CSS selector (optional)', required: false },
       { name: 'output', description: 'Save to file', required: false, choices: ['-o'] },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const outputIdx = args.indexOf('-o');
       let selector: string | undefined;
       let outputPath: string | undefined;
@@ -385,13 +398,14 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'text',
     description: 'Get text content of page or element',
     args: [
       { name: 'selector', description: 'CSS selector (optional)', required: false },
       { name: 'output', description: 'Save to file', required: false, choices: ['-o'] },
     ],
-    async execute(args): Promise<CommandResult> {
+    async execute(args) {
       const outputIdx = args.indexOf('-o');
       let selector: string | undefined;
       let outputPath: string | undefined;
@@ -421,9 +435,10 @@ export const browserCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'status',
     description: 'Show browser connection status',
-    async execute(): Promise<CommandResult> {
+    async execute() {
       if (!cdp.isConnected()) {
         return { output: 'Not connected to browser', success: true };
       }

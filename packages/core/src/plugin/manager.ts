@@ -3,7 +3,7 @@
  */
 
 import { EventEmitter } from 'events';
-import type { Plugin, PluginModule, PluginFactory, McpTool } from './types.js';
+import type { Plugin, PluginModule, PluginFactory, PluginCliCommand, PluginMcpTool } from './types.js';
 import type { RegisteredCommand } from '../commands/types.js';
 import { createPluginContext } from './context.js';
 
@@ -118,8 +118,8 @@ export class PluginManager extends EventEmitter {
       throw new Error(`Plugin ${name} has invalid manifest.description`);
     }
 
-    if (!Array.isArray(plugin.commands)) {
-      throw new Error(`Plugin ${name} must have commands array`);
+    if (typeof plugin.getExports !== 'function') {
+      throw new Error(`Plugin ${name} must have getExports() method`);
     }
 
     if (typeof plugin.init !== 'function') {
@@ -241,15 +241,48 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * Get all commands from enabled plugins
+   * Get CLI commands from a plugin's exports
    */
-  getCommands(): RegisteredCommand[] {
-    const commands: RegisteredCommand[] = [];
+  private getPluginCliCommands(pluginName: string, plugin: Plugin): PluginCliCommand[] {
+    const exports = plugin.getExports();
+    const commands: PluginCliCommand[] = [];
+
+    for (const exp of Object.values(exports)) {
+      if (exp.type === 'cli') {
+        commands.push(exp);
+      }
+    }
+
+    return commands;
+  }
+
+  /**
+   * Get MCP tools from a plugin's exports
+   */
+  private getPluginMcpToolsFromExports(pluginName: string, plugin: Plugin): PluginMcpTool[] {
+    const exports = plugin.getExports();
+    const tools: PluginMcpTool[] = [];
+
+    for (const exp of Object.values(exports)) {
+      if (exp.type === 'tool') {
+        tools.push(exp);
+      }
+    }
+
+    return tools;
+  }
+
+  /**
+   * Get all CLI commands from enabled plugins
+   */
+  getCliCommands(): Array<PluginCliCommand & { _plugin: string }> {
+    const commands: Array<PluginCliCommand & { _plugin: string }> = [];
 
     for (const [name, info] of this.plugins) {
       if (!info.enabled) continue;
 
-      for (const cmd of info.plugin.commands) {
+      const pluginCommands = this.getPluginCliCommands(name, info.plugin);
+      for (const cmd of pluginCommands) {
         commands.push({
           ...cmd,
           _plugin: name,
@@ -262,14 +295,15 @@ export class PluginManager extends EventEmitter {
 
   /**
    * Get all MCP tools from enabled plugins (excluding disabled tools)
+   * Tools are prefixed with plugin name: plugin_tool
    */
-  getMcpTools(): Array<McpTool & { _plugin: string }> {
-    const tools: Array<McpTool & { _plugin: string }> = [];
+  getMcpTools(): Array<PluginMcpTool & { _plugin: string; name: string }> {
+    const tools: Array<PluginMcpTool & { _plugin: string; name: string }> = [];
 
     for (const [name, info] of this.plugins) {
       if (!info.enabled) continue;
 
-      const pluginTools = info.plugin.getMcpTools?.() ?? [];
+      const pluginTools = this.getPluginMcpToolsFromExports(name, info.plugin);
       for (const tool of pluginTools) {
         // Skip disabled tools
         if (info.disabledTools.has(tool.name)) continue;
@@ -293,7 +327,7 @@ export class PluginManager extends EventEmitter {
     const info = this.plugins.get(pluginName);
     if (!info) return [];
 
-    const pluginTools = info.plugin.getMcpTools?.() ?? [];
+    const pluginTools = this.getPluginMcpToolsFromExports(pluginName, info.plugin);
     return pluginTools.map((tool) => ({
       name: tool.name,
       enabled: !info.disabledTools.has(tool.name),
@@ -323,7 +357,7 @@ export class PluginManager extends EventEmitter {
     }
 
     // Verify tool exists
-    const pluginTools = info.plugin.getMcpTools?.() ?? [];
+    const pluginTools = this.getPluginMcpToolsFromExports(pluginName, info.plugin);
     const toolExists = pluginTools.some((t) => t.name === toolName);
     if (!toolExists) {
       throw new Error(`Tool not found: ${toolName} in plugin ${pluginName}`);

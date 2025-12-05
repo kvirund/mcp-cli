@@ -10,14 +10,10 @@ import type {
   PluginContext,
   PluginStatus,
   PluginHelp,
-  McpTool,
+  PluginExport,
+  PluginCliCommand,
+  PluginMcpTool,
 } from '@kvirund/mcp-cli/plugin';
-
-interface CommandResult {
-  output: string;
-  success: boolean;
-  data?: unknown;
-}
 
 import { McpClient, McpServerConfig } from './mcp-client.js';
 
@@ -38,7 +34,7 @@ function createProxyPlugin(): Plugin {
   const plugin: Plugin = {
     manifest: {
       name: 'proxy',
-      version: '0.2.0',
+      version: '0.3.0',
       description: 'MCP proxy - connects to external MCP servers',
     },
 
@@ -74,11 +70,13 @@ function createProxyPlugin(): Plugin {
       serverConfig = null;
     },
 
-    commands: [
-      {
+    getExports(): Record<string, PluginExport> {
+      // CLI Commands
+      const connectCmd: PluginCliCommand = {
+        type: 'cli',
         name: 'connect',
         description: 'Connect to MCP server',
-        async execute(): Promise<CommandResult> {
+        async execute() {
           if (!mcpClient) {
             return { output: 'Plugin not initialized', success: false };
           }
@@ -102,11 +100,13 @@ function createProxyPlugin(): Plugin {
             };
           }
         },
-      },
-      {
+      };
+
+      const disconnectCmd: PluginCliCommand = {
+        type: 'cli',
         name: 'disconnect',
         description: 'Disconnect from MCP server',
-        async execute(): Promise<CommandResult> {
+        async execute() {
           if (!mcpClient) {
             return { output: 'Plugin not initialized', success: false };
           }
@@ -126,11 +126,13 @@ function createProxyPlugin(): Plugin {
             };
           }
         },
-      },
-      {
+      };
+
+      const restartCmd: PluginCliCommand = {
+        type: 'cli',
         name: 'restart',
         description: 'Restart connection to MCP server',
-        async execute(): Promise<CommandResult> {
+        async execute() {
           if (!mcpClient) {
             return { output: 'Plugin not initialized', success: false };
           }
@@ -153,11 +155,13 @@ function createProxyPlugin(): Plugin {
             };
           }
         },
-      },
-      {
+      };
+
+      const statusCmd: PluginCliCommand = {
+        type: 'cli',
         name: 'status',
         description: 'Show connection status and available tools',
-        async execute(): Promise<CommandResult> {
+        async execute() {
           if (!mcpClient) {
             return { output: 'Plugin not initialized', success: false };
           }
@@ -180,11 +184,13 @@ function createProxyPlugin(): Plugin {
 
           return { output: lines.join('\n'), success: true };
         },
-      },
-      {
+      };
+
+      const debugCmd: PluginCliCommand = {
+        type: 'cli',
         name: 'debug',
         description: 'Show debug information (config, errors, stderr)',
-        async execute(): Promise<CommandResult> {
+        async execute() {
           if (!mcpClient) {
             return { output: 'Plugin not initialized', success: false };
           }
@@ -214,8 +220,39 @@ function createProxyPlugin(): Plugin {
 
           return { output: lines.join('\n'), success: true };
         },
-      },
-    ],
+      };
+
+      // MCP Tools - dynamically generated from connected server
+      const exports: Record<string, PluginExport> = {
+        connect: connectCmd,
+        disconnect: disconnectCmd,
+        restart: restartCmd,
+        status: statusCmd,
+        debug: debugCmd,
+      };
+
+      // Add MCP tools if connected
+      if (mcpClient && mcpClient.isConnected()) {
+        const client = mcpClient;
+        for (const tool of client.getTools()) {
+          const mcpTool: PluginMcpTool = {
+            type: 'tool',
+            name: tool.name,
+            description: tool.description || '',
+            inputSchema: tool.inputSchema,
+            async handler(params: Record<string, unknown>): Promise<unknown> {
+              if (!client.isConnected()) {
+                throw new Error('Not connected to MCP server');
+              }
+              return client.callTool(tool.name, params);
+            },
+          };
+          exports[`tool_${tool.name}`] = mcpTool;
+        }
+      }
+
+      return exports;
+    },
 
     getStatus(): PluginStatus {
       if (!mcpClient) {
@@ -271,27 +308,6 @@ function createProxyPlugin(): Plugin {
           },
         ],
       };
-    },
-
-    getMcpTools(): McpTool[] {
-      if (!mcpClient || !mcpClient.isConnected()) {
-        return [];
-      }
-
-      // Capture mcpClient reference for use in closures
-      const client = mcpClient;
-
-      return client.getTools().map((tool) => ({
-        name: tool.name,
-        description: tool.description || '',
-        inputSchema: tool.inputSchema,
-        async handler(params: Record<string, unknown>): Promise<unknown> {
-          if (!client.isConnected()) {
-            throw new Error('Not connected to MCP server');
-          }
-          return client.callTool(tool.name, params);
-        },
-      }));
     },
   };
 

@@ -2,8 +2,9 @@
  * Built-in commands for MCP CLI
  */
 
-import type { Command, CommandResult, AppState } from './types.js';
+import type { Command, CommandResult, AppState, RegisteredCommand } from './types.js';
 import type { PluginManager } from '../plugin/manager.js';
+import type { Plugin } from '../plugin/types.js';
 import { commandRegistry } from './registry.js';
 import { startSseServer, stopSseServer, getSseServer } from '../mcp/sse-transport.js';
 import { DEFAULT_MCP_PORT } from '../config.js';
@@ -128,14 +129,10 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
       if (action === 'enable') {
         try {
           await pluginManager.enablePlugin(name);
-          // Re-register commands
-          const plugin = pluginManager.get(name);
-          if (plugin) {
-            for (const cmd of plugin.commands) {
-              if (!commandRegistry.has(cmd.name)) {
-                commandRegistry.register({ ...cmd, _plugin: name });
-              }
-            }
+          // Re-register plugin commands
+          const pluginCommands = pluginManager.getCliCommands().filter((cmd) => cmd._plugin === name);
+          for (const cmd of pluginCommands) {
+            commandRegistry.registerPluginCommand(name, cmd);
           }
           return {
             output: `Plugin '${name}' enabled`,
@@ -479,7 +476,28 @@ function formatGeneralHelp(pluginManager: PluginManager): CommandResult {
     lines.push(`  ${cmd.name}${aliases} - ${cmd.description}`);
   }
 
-  // Plugin commands
+  // Plugin commands (grouped by command name, showing collisions)
+  const pluginCmds: RegisteredCommand[] = [];
+  for (const [pluginName, cmds] of byPlugin) {
+    if (pluginName !== undefined) {
+      pluginCmds.push(...cmds);
+    }
+  }
+
+  if (pluginCmds.length > 0) {
+    lines.push('');
+    lines.push('Plugin Commands:');
+    for (const cmd of pluginCmds) {
+      if (commandRegistry.hasCollision(cmd.name)) {
+        const plugins = commandRegistry.getCollisionPlugins(cmd.name);
+        lines.push(`  ${cmd.name} <plugin> - ${cmd.description} (${plugins.join(', ')})`);
+      } else {
+        lines.push(`  ${cmd.name} - ${cmd.description}`);
+      }
+    }
+  }
+
+  // Plugins list
   const plugins = pluginManager.getAll();
   if (plugins.size > 0) {
     lines.push('');
@@ -487,15 +505,9 @@ function formatGeneralHelp(pluginManager: PluginManager): CommandResult {
     for (const [name, info] of plugins) {
       const status = info.enabled ? '●' : '○';
       const statusColor = info.enabled ? 'enabled' : 'disabled';
-      lines.push(`  ${status} ${name} (${statusColor}) - ${info.plugin.manifest.description}`);
-
-      if (info.enabled) {
-        const pluginCmds = byPlugin.get(name) ?? [];
-        if (pluginCmds.length > 0) {
-          const cmdNames = pluginCmds.map((c) => c.name).join(', ');
-          lines.push(`    Commands: ${cmdNames}`);
-        }
-      }
+      const toolCount = pluginManager.getPluginTools(name).filter((t) => t.enabled).length;
+      const toolText = info.enabled && toolCount > 0 ? ` - ${toolCount} tools` : '';
+      lines.push(`  ${status} ${name} (${statusColor})${toolText}`);
     }
   }
 
@@ -508,7 +520,7 @@ function formatGeneralHelp(pluginManager: PluginManager): CommandResult {
   };
 }
 
-function formatPluginHelp(plugin: import('../plugin/types.js').Plugin): CommandResult {
+function formatPluginHelp(plugin: Plugin): CommandResult {
   const help = plugin.getHelp();
   const lines: string[] = [];
 
@@ -530,14 +542,24 @@ function formatPluginHelp(plugin: import('../plugin/types.js').Plugin): CommandR
     }
   }
 
-  // List commands
-  const pluginCmds = plugin.commands;
-  if (pluginCmds.length > 0) {
+  // List commands and tools from exports
+  const exports = plugin.getExports();
+  const cliCommands = Object.values(exports).filter((e) => e.type === 'cli');
+  const mcpTools = Object.values(exports).filter((e) => e.type === 'tool');
+
+  if (cliCommands.length > 0) {
     lines.push('');
     lines.push('Commands:');
-    for (const cmd of pluginCmds) {
-      const aliases = cmd.aliases?.length ? ` (${cmd.aliases.join(', ')})` : '';
-      lines.push(`  ${cmd.name}${aliases} - ${cmd.description}`);
+    for (const cmd of cliCommands) {
+      lines.push(`  ${cmd.name} - ${cmd.description}`);
+    }
+  }
+
+  if (mcpTools.length > 0) {
+    lines.push('');
+    lines.push('MCP Tools:');
+    for (const tool of mcpTools) {
+      lines.push(`  ${tool.name} - ${tool.description}`);
     }
   }
 
@@ -614,7 +636,7 @@ function listTools(pluginManager: PluginManager, pluginName?: string): CommandRe
   const lines: string[] = [];
 
   // Filter by plugin if specified
-  let pluginsToShow: Map<string, { plugin: import('../plugin/types.js').Plugin; enabled: boolean; disabledTools: Set<string> }>;
+  let pluginsToShow: Map<string, { plugin: Plugin; enabled: boolean; disabledTools: Set<string> }>;
   if (pluginName) {
     const info = plugins.get(pluginName);
     if (!info) {

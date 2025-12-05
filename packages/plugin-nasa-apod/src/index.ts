@@ -4,7 +4,7 @@
  * Provides access to NASA's Astronomy Picture of the Day API
  */
 
-import type { Plugin, PluginContext, PluginStatus, PluginHelp } from '@kvirund/mcp-cli';
+import type { Plugin, PluginContext, PluginStatus, PluginHelp, PluginExport } from '@kvirund/mcp-cli/plugin';
 import { nasaApodCommands } from './commands.js';
 import { nasaApodMcpTools } from './mcp-tools.js';
 import { setConfigApiKey, hasCustomApiKey } from './constants.js';
@@ -14,7 +14,7 @@ let context: PluginContext | null = null;
 const nasaApodPlugin: Plugin = {
   manifest: {
     name: 'nasa-apod',
-    version: '0.1.0',
+    version: '0.2.0',
     description: 'NASA Astronomy Picture of the Day - explore the cosmos',
   },
 
@@ -40,7 +40,21 @@ const nasaApodPlugin: Plugin = {
     context?.log('Plugin disabled');
   },
 
-  commands: nasaApodCommands,
+  getExports(): Record<string, PluginExport> {
+    const exports: Record<string, PluginExport> = {};
+
+    // CLI commands
+    for (const cmd of nasaApodCommands) {
+      exports[cmd.name] = cmd;
+    }
+
+    // MCP tools
+    for (const tool of nasaApodMcpTools) {
+      exports[`tool_${tool.name}`] = tool;
+    }
+
+    return exports;
+  },
 
   getStatus(): PluginStatus {
     return {
@@ -71,10 +85,6 @@ const nasaApodPlugin: Plugin = {
         },
       ],
     };
-  },
-
-  getMcpTools() {
-    return nasaApodMcpTools;
   },
 };
 

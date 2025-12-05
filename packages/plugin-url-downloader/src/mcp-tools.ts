@@ -2,11 +2,12 @@
  * MCP tools for URL downloader plugin
  */
 
-import type { McpTool } from '@kvirund/mcp-cli';
+import type { PluginMcpTool } from '@kvirund/mcp-cli/plugin';
 import { httpRequest, formatResponse } from './http-client.js';
 
-export const urlDownloaderMcpTools: McpTool[] = [
+export const urlDownloaderMcpTools: PluginMcpTool[] = [
   {
+    type: 'tool',
     name: 'url_fetch',
     description: 'Fetch content from a URL using GET request',
     inputSchema: {
@@ -35,7 +36,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
       },
       required: ['url'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const response = await httpRequest(params.url as string, {
           method: 'GET',
@@ -53,6 +54,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
     },
   },
   {
+    type: 'tool',
     name: 'url_request',
     description: 'Make an HTTP request with full control over method, headers, and body',
     inputSchema: {
@@ -94,7 +96,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
       },
       required: ['url'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const response = await httpRequest(params.url as string, {
           method: (params.method as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS') || 'GET',
@@ -114,6 +116,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
     },
   },
   {
+    type: 'tool',
     name: 'url_post',
     description: 'POST data to a URL',
     inputSchema: {
@@ -150,7 +153,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
       },
       required: ['url', 'body'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       const headers: Record<string, string> = { ...(params.headers as Record<string, string>) };
       const body = params.body as string;
 
@@ -184,6 +187,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
     },
   },
   {
+    type: 'tool',
     name: 'url_head',
     description: 'Get HTTP headers for a URL without downloading the body',
     inputSchema: {
@@ -204,7 +208,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
       },
       required: ['url'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const response = await httpRequest(params.url as string, {
           method: 'HEAD',
@@ -230,6 +234,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
     },
   },
   {
+    type: 'tool',
     name: 'url_json',
     description: 'Fetch JSON from a URL and return parsed content',
     inputSchema: {
@@ -250,7 +255,7 @@ export const urlDownloaderMcpTools: McpTool[] = [
       },
       required: ['url'],
     },
-    async handler(params) {
+    async handler(params: Record<string, unknown>) {
       try {
         const response = await httpRequest(params.url as string, {
           method: 'GET',

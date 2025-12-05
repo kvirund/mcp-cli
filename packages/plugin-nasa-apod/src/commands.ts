@@ -2,7 +2,7 @@
  * CLI commands for NASA APOD plugin
  */
 
-import type { Command, CommandResult } from '@kvirund/mcp-cli';
+import type { PluginCliCommand, CommandResult } from '@kvirund/mcp-cli/plugin';
 import {
   fetchTodayApod,
   fetchApodByDate,
@@ -42,13 +42,13 @@ function formatError(error: unknown): CommandResult {
   };
 }
 
-export const nasaApodCommands: Command[] = [
+export const nasaApodCommands: PluginCliCommand[] = [
   {
+    type: 'cli',
     name: 'apod',
     description: "Get today's Astronomy Picture of the Day",
-    aliases: ['today'],
 
-    async execute(): Promise<CommandResult> {
+    async execute() {
       try {
         const entry = await fetchTodayApod(true);
         const output = transformApodEntry(entry);
@@ -63,6 +63,7 @@ export const nasaApodCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'apod-date',
     description: 'Get APOD for a specific date',
     args: [
@@ -73,7 +74,7 @@ export const nasaApodCommands: Command[] = [
       },
     ],
 
-    async execute(args: string[]): Promise<CommandResult> {
+    async execute(args) {
       const [date] = args;
       if (!date) {
         return {
@@ -96,6 +97,7 @@ export const nasaApodCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'apod-random',
     description: 'Get random APODs',
     args: [
@@ -106,7 +108,7 @@ export const nasaApodCommands: Command[] = [
       },
     ],
 
-    async execute(args: string[]): Promise<CommandResult> {
+    async execute(args) {
       const count = args[0] ? parseInt(args[0], 10) : DEFAULT_RANDOM_COUNT;
 
       if (isNaN(count) || count < 1 || count > 100) {
@@ -131,6 +133,7 @@ export const nasaApodCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'apod-range',
     description: 'Get APODs for a date range',
     args: [
@@ -146,7 +149,7 @@ export const nasaApodCommands: Command[] = [
       },
     ],
 
-    async execute(args: string[]): Promise<CommandResult> {
+    async execute(args) {
       const [startDate, endDate] = args;
       if (!startDate || !endDate) {
         return {
@@ -171,6 +174,7 @@ export const nasaApodCommands: Command[] = [
   },
 
   {
+    type: 'cli',
     name: 'apod-search',
     description: 'Search APODs by keyword',
     args: [
@@ -186,7 +190,7 @@ export const nasaApodCommands: Command[] = [
       },
     ],
 
-    async execute(args: string[]): Promise<CommandResult> {
+    async execute(args) {
       const [query, limitStr] = args;
       if (!query) {
         return {

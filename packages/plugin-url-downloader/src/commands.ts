@@ -2,11 +2,12 @@
  * CLI commands for URL downloader plugin
  */
 
-import type { Command } from '@kvirund/mcp-cli';
+import type { PluginCliCommand } from '@kvirund/mcp-cli/plugin';
 import { httpRequest, formatResponse, parseHeaders } from './http-client.js';
 
-export const urlDownloaderCommands: Command[] = [
+export const urlDownloaderCommands: PluginCliCommand[] = [
   {
+    type: 'cli',
     name: 'fetch',
     description: 'Fetch a URL (GET request). Use -h for headers, -b for body only',
 
@@ -34,6 +35,7 @@ export const urlDownloaderCommands: Command[] = [
     },
   },
   {
+    type: 'cli',
     name: 'http',
     description: 'Make HTTP request: http <method> <url> [-H "Header: Value"] [-d "data"]',
 
@@ -88,6 +90,7 @@ export const urlDownloaderCommands: Command[] = [
     },
   },
   {
+    type: 'cli',
     name: 'post',
     description: 'POST data to a URL: post <url> <data> [-H "Header: Value"]',
 
@@ -143,6 +146,7 @@ export const urlDownloaderCommands: Command[] = [
     },
   },
   {
+    type: 'cli',
     name: 'head',
     description: 'Get headers only (HEAD request)',
 

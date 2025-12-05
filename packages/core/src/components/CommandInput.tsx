@@ -1,17 +1,15 @@
 import { useState, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
-import type { Command } from '../commands/types.js';
 import type { PluginManager } from '../plugin/manager.js';
+import { commandRegistry } from '../commands/registry.js';
 
 interface CommandInputProps {
-  commands: Command[];
   pluginManager: PluginManager;
   onSubmit: (command: string) => void;
   commandHistory: string[];
 }
 
 export function CommandInput({
-  commands,
   pluginManager,
   onSubmit,
   commandHistory,
@@ -33,64 +31,99 @@ export function CommandInput({
       const isTypingCommand = parts.length === 1;
 
       if (isTypingCommand) {
-        // Suggest command names
-        const matches = commands
-          .filter(
-            (cmd) =>
-              cmd.name.startsWith(value.toLowerCase()) ||
-              cmd.aliases?.some((a) => a.startsWith(value.toLowerCase()))
-          )
-          .map((cmd) => cmd.name)
+        // Suggest command names from registry
+        const allNames = commandRegistry.getAllNames();
+        const matches = allNames
+          .filter((name) => name.toLowerCase().startsWith(value.toLowerCase()))
           .slice(0, 5);
         setSuggestions(matches);
       } else {
         const cmdName = parts[0].toLowerCase();
-        const cmd = commands.find(
-          (c) => c.name === cmdName || c.aliases?.includes(cmdName)
-        );
+        const cmd = commandRegistry.get(cmdName);
+        const lastPart = parts[parts.length - 1].toLowerCase();
 
-        // Special handling for 'help' command - suggest plugins and commands
-        if (cmdName === 'help' && parts.length === 2) {
-          const partial = parts[1].toLowerCase();
-          const pluginNames = pluginManager.getPluginNames();
-          const commandNames = commands.map((c) => c.name);
+        // Multi-level autocomplete: check for subcommands at current level
+        const argIndex = parts.length - 2; // 0-based index of the argument being typed
 
-          const matches = [...new Set([...pluginNames, ...commandNames])]
-            .filter((name) => name.toLowerCase().startsWith(partial))
-            .slice(0, 5);
+        // Level 1: Command with collision (command <plugin>) or command choices
+        if (argIndex === 0) {
+          // Check if command has collision - suggest plugins
+          const subcommands = commandRegistry.getSubcommands(cmdName);
+          if (subcommands.length > 0) {
+            const matches = subcommands
+              .filter((s) => s.toLowerCase().startsWith(lastPart))
+              .slice(0, 5);
+            setSuggestions(matches);
+            setSelectedSuggestion(0);
+            return;
+          }
 
-          setSuggestions(matches);
+          // Special handling for 'help' command - suggest plugins and commands
+          if (cmdName === 'help') {
+            const pluginNames = pluginManager.getPluginNames();
+            const commandNames = commandRegistry.getAllNames();
+            const matches = [...new Set([...pluginNames, ...commandNames])]
+              .filter((name) => name.toLowerCase().startsWith(lastPart))
+              .slice(0, 5);
+            setSuggestions(matches);
+            setSelectedSuggestion(0);
+            return;
+          }
         }
-        // Special handling for 'plugins' command
-        else if (cmdName === 'plugins' && parts.length === 2) {
-          const partial = parts[1].toLowerCase();
-          const actions = ['list', 'enable', 'disable'];
-          const matches = actions
-            .filter((a) => a.startsWith(partial))
-            .slice(0, 5);
-          setSuggestions(matches);
-        }
-        // Suggest plugin names for 'plugins enable/disable'
-        else if (
+
+        // Level 2: For 'plugins enable/disable', suggest plugin names
+        if (
+          argIndex === 1 &&
           cmdName === 'plugins' &&
-          parts.length === 3 &&
           (parts[1] === 'enable' || parts[1] === 'disable')
         ) {
-          const partial = parts[2].toLowerCase();
           const pluginNames = pluginManager.getPluginNames();
           const matches = pluginNames
-            .filter((name) => name.toLowerCase().startsWith(partial))
+            .filter((name) => name.toLowerCase().startsWith(lastPart))
             .slice(0, 5);
           setSuggestions(matches);
+          setSelectedSuggestion(0);
+          return;
         }
+
+        // Level 2: For 'tools enable/disable', suggest plugin names
+        if (
+          argIndex === 1 &&
+          cmdName === 'tools' &&
+          (parts[1] === 'enable' || parts[1] === 'disable')
+        ) {
+          const pluginNames = pluginManager.getPluginNames();
+          const matches = pluginNames
+            .filter((name) => name.toLowerCase().startsWith(lastPart))
+            .slice(0, 5);
+          setSuggestions(matches);
+          setSelectedSuggestion(0);
+          return;
+        }
+
+        // Level 3: For 'tools enable/disable <plugin>', suggest tool names
+        if (
+          argIndex === 2 &&
+          cmdName === 'tools' &&
+          (parts[1] === 'enable' || parts[1] === 'disable')
+        ) {
+          const pluginName = parts[2];
+          const tools = pluginManager.getPluginTools(pluginName);
+          const matches = tools
+            .map((t) => t.name)
+            .filter((name) => name.toLowerCase().startsWith(lastPart))
+            .slice(0, 5);
+          setSuggestions(matches);
+          setSelectedSuggestion(0);
+          return;
+        }
+
         // Standard argument suggestions from command definition
-        else if (cmd?.args) {
-          const argIndex = parts.length - 2;
+        if (cmd?.args && argIndex < cmd.args.length) {
           const arg = cmd.args[argIndex];
           if (arg?.choices) {
-            const currentArg = parts[parts.length - 1].toLowerCase();
             const matches = arg.choices
-              .filter((c) => c.toLowerCase().startsWith(currentArg))
+              .filter((c) => c.toLowerCase().startsWith(lastPart))
               .slice(0, 5);
             setSuggestions(matches);
           } else {
@@ -102,7 +135,7 @@ export function CommandInput({
       }
       setSelectedSuggestion(0);
     },
-    [commands, pluginManager]
+    [pluginManager]
   );
 
   useInput((char, key) => {
