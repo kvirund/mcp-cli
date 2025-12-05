@@ -112,13 +112,13 @@ export function createMcpServer(options: McpServerOptions): Server {
   });
 
   // Listen for plugin changes to notify clients
-  pluginManager.on('pluginEnabled', () => {
+  const notifyToolsChanged = () => {
     server.notification({ method: 'notifications/tools/list_changed' });
-  });
+  };
 
-  pluginManager.on('pluginDisabled', () => {
-    server.notification({ method: 'notifications/tools/list_changed' });
-  });
+  pluginManager.on('pluginEnabled', notifyToolsChanged);
+  pluginManager.on('pluginDisabled', notifyToolsChanged);
+  pluginManager.on('stateChange', notifyToolsChanged);
 
   return server;
 }
