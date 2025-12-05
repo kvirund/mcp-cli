@@ -47,15 +47,7 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
     });
 
     // Register plugin CLI commands with collision handling
-    const cliCommands = pluginManager.getCliCommands();
-    if (cliCommands.length > 0) {
-      addHistory({
-        command: '',
-        output: `[debug] Registering ${cliCommands.length} plugin commands: ${cliCommands.map(c => `${c._plugin}:${c.name}`).join(', ')}`,
-        success: true,
-      });
-    }
-    for (const cmd of cliCommands) {
+    for (const cmd of pluginManager.getCliCommands()) {
       commandRegistry.registerPluginCommand(cmd._plugin, cmd);
     }
 
@@ -121,16 +113,36 @@ export function App({ pluginManager, welcomeMessage, config }: AppProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Listen for plugin state changes
+  // Listen for plugin state changes and re-register commands
   useEffect(() => {
-    const handler = () => setTick((t) => t + 1);
-    pluginManager.on('stateChange', handler);
-    pluginManager.on('pluginEnabled', handler);
-    pluginManager.on('pluginDisabled', handler);
+    const tickHandler = () => setTick((t) => t + 1);
+
+    // Re-register plugin commands when state changes (e.g., connect/disconnect)
+    const stateChangeHandler = (pluginName: string) => {
+      // Remove old commands from this plugin
+      commandRegistry.unregisterPlugin(pluginName);
+
+      // Re-register commands from this plugin
+      const plugin = pluginManager.get(pluginName);
+      if (plugin && pluginManager.isEnabled(pluginName)) {
+        const exports = plugin.getExports();
+        for (const exp of Object.values(exports)) {
+          if (exp.type === 'cli') {
+            commandRegistry.registerPluginCommand(pluginName, exp);
+          }
+        }
+      }
+
+      setTick((t) => t + 1);
+    };
+
+    pluginManager.on('stateChange', stateChangeHandler);
+    pluginManager.on('pluginEnabled', tickHandler);
+    pluginManager.on('pluginDisabled', tickHandler);
     return () => {
-      pluginManager.off('stateChange', handler);
-      pluginManager.off('pluginEnabled', handler);
-      pluginManager.off('pluginDisabled', handler);
+      pluginManager.off('stateChange', stateChangeHandler);
+      pluginManager.off('pluginEnabled', tickHandler);
+      pluginManager.off('pluginDisabled', tickHandler);
     };
   }, [pluginManager]);
 
