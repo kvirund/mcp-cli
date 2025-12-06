@@ -9,9 +9,19 @@ import { commandRegistry } from './registry.js';
 import { startSseServer, stopSseServer, getSseServer } from '../mcp/sse-transport.js';
 import { DEFAULT_MCP_PORT } from '../config.js';
 import { toolCallLogger, ToolCallLogger } from '../mcp/logger.js';
+import type { ToolStats, ToolStat } from '../mcp/logger.js';
 
 // Store reference to pluginManager for serve command
 let _pluginManager: PluginManager | null = null;
+
+/** Calculate byte size of a JSON-serializable value */
+function byteSize(value: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), 'utf8');
+  } catch {
+    return 0;
+  }
+}
 
 // Callback for updating MCP status in UI
 let _mcpStatusCallback: ((status: { running: boolean; port?: number; clients: number }) => void) | null = null;
@@ -449,6 +459,86 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
     },
   };
 
+  const statsCommand: Command = {
+    name: 'stats',
+    description: 'Show tool usage statistics',
+    args: [
+      {
+        name: 'tool',
+        description: 'Filter by tool name',
+        required: false,
+      },
+      {
+        name: 'action',
+        description: 'Action: reset (optional)',
+        required: false,
+        choices: ['reset'],
+      },
+    ],
+
+    async execute(args: string[]): Promise<CommandResult> {
+      const [toolFilter, action] = args;
+
+      // Handle reset action
+      if (toolFilter === 'reset' || action === 'reset') {
+        await toolCallLogger.resetStats();
+        return { output: 'Statistics reset', success: true };
+      }
+
+      const stats = toolCallLogger.getStats();
+
+      if (toolFilter) {
+        const tool = stats.tools[toolFilter];
+        if (!tool) {
+          // Try to find partial match
+          const matches = Object.keys(stats.tools).filter((name) =>
+            name.toLowerCase().includes(toolFilter.toLowerCase())
+          );
+          if (matches.length === 0) {
+            return { output: `No stats for tool: ${toolFilter}`, success: false };
+          }
+          if (matches.length === 1) {
+            return formatToolStatDetail(matches[0], stats.tools[matches[0]]);
+          }
+          return {
+            output: `Multiple matches:\n${matches.map((m) => `  ${m}`).join('\n')}`,
+            success: true,
+          };
+        }
+        return formatToolStatDetail(toolFilter, tool);
+      }
+
+      // General statistics
+      const since = new Date(stats.since).toLocaleDateString();
+      const totalBytes = (stats.totals.requestBytes || 0) + (stats.totals.responseBytes || 0);
+      const lines = [
+        `Tool Usage Statistics (since ${since})`,
+        `Total: ${stats.totals.calls} calls, ${stats.totals.success} success, ${stats.totals.errors} errors`,
+        `Data: ${formatBytes(stats.totals.requestBytes || 0)} in, ${formatBytes(stats.totals.responseBytes || 0)} out (${formatBytes(totalBytes)} total)`,
+      ];
+
+      const toolEntries = Object.entries(stats.tools);
+      if (toolEntries.length > 0) {
+        lines.push('');
+        lines.push('Top tools by usage:');
+        lines.push(
+          ...toolEntries
+            .sort((a, b) => b[1].calls - a[1].calls)
+            .slice(0, 10)
+            .map(([name, s]) => {
+              const avgMs = s.calls > 0 ? Math.round(s.totalDuration / s.calls) : 0;
+              return `  ${name}: ${s.calls} calls (${s.success}✓ ${s.errors}✗) avg ${avgMs}ms`;
+            })
+        );
+      }
+
+      lines.push('');
+      lines.push("Use 'stats <tool>' for details, 'stats reset' to clear.");
+
+      return { output: lines.join('\n'), success: true };
+    },
+  };
+
   const callCommand: Command = {
     name: 'call',
     description: 'Call an MCP tool from a plugin',
@@ -532,21 +622,53 @@ export function createBuiltinCommands(pluginManager: PluginManager): Command[] {
         }
       }
 
-      // Call the tool handler
+      // Call the tool handler with logging
+      const startTime = Date.now();
+      const fullToolName = `${pluginNameArg}_${toolName}`;
+      const requestBytes = byteSize(params);
+
       try {
         const result = await tool.handler(params);
         const output = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+        const responseBytes = byteSize(output);
+
+        toolCallLogger.log({
+          timestamp: new Date(),
+          clientId: 'cli',
+          tool: fullToolName,
+          params,
+          success: true,
+          duration: Date.now() - startTime,
+          requestBytes,
+          responseBytes,
+        });
+
         return { output: `[${pluginNameArg}] ${output}`, success: true };
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const errorOutput = `Error: ${message}`;
+
+        toolCallLogger.log({
+          timestamp: new Date(),
+          clientId: 'cli',
+          tool: fullToolName,
+          params,
+          success: false,
+          error: message,
+          duration: Date.now() - startTime,
+          requestBytes,
+          responseBytes: byteSize(errorOutput),
+        });
+
         return {
-          output: `[${pluginNameArg}] Error: ${error instanceof Error ? error.message : error}`,
+          output: `[${pluginNameArg}] ${errorOutput}`,
           success: false,
         };
       }
     },
   };
 
-  return [helpCommand, pluginsCommand, toolsCommand, callCommand, logsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
+  return [helpCommand, pluginsCommand, toolsCommand, callCommand, statsCommand, logsCommand, clearCommand, exitCommand, serveCommand, stopCommand];
 }
 
 /**
@@ -788,4 +910,28 @@ function listTools(pluginManager: PluginManager, pluginName?: string): CommandRe
     output: lines.join('\n'),
     success: true,
   };
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatToolStatDetail(name: string, stat: ToolStat): CommandResult {
+  const successRate = stat.calls > 0 ? ((stat.success / stat.calls) * 100).toFixed(1) : '0.0';
+  const avgMs = stat.calls > 0 ? Math.round(stat.totalDuration / stat.calls) : 0;
+  const lastUsed = stat.lastUsed ? new Date(stat.lastUsed).toLocaleString() : 'never';
+  const totalBytes = (stat.totalRequestBytes || 0) + (stat.totalResponseBytes || 0);
+
+  const lines = [
+    `${name}:`,
+    `  Calls: ${stat.calls} (${stat.success} success, ${stat.errors} errors)`,
+    `  Success rate: ${successRate}%`,
+    `  Avg duration: ${avgMs}ms`,
+    `  Data: ${formatBytes(stat.totalRequestBytes || 0)} in, ${formatBytes(stat.totalResponseBytes || 0)} out (${formatBytes(totalBytes)} total)`,
+    `  Last used: ${lastUsed}`,
+  ];
+
+  return { output: lines.join('\n'), success: true };
 }

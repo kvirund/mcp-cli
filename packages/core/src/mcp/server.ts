@@ -12,6 +12,15 @@ import {
 import type { PluginManager } from '../plugin/manager.js';
 import { toolCallLogger } from './logger.js';
 
+/** Calculate byte size of a JSON-serializable value */
+function byteSize(value: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), 'utf8');
+  } catch {
+    return 0;
+  }
+}
+
 export interface McpServerOptions {
   name: string;
   version: string;
@@ -58,18 +67,21 @@ export function createMcpServer(options: McpServerOptions): Server {
     const tool = pluginTools.find((t) => t.name === toolName);
 
     if (!tool) {
+      const errorText = `Unknown tool: ${toolName}`;
       toolCallLogger.log({
         timestamp: new Date(),
         clientId,
         tool: toolName,
         params: args || {},
         success: false,
-        error: `Unknown tool: ${toolName}`,
+        error: errorText,
         duration: Date.now() - startTime,
+        requestBytes: byteSize(args || {}),
+        responseBytes: byteSize(errorText),
       });
 
       return {
-        content: [{ type: 'text', text: `Unknown tool: ${toolName}` }],
+        content: [{ type: 'text', text: errorText }],
         isError: true,
       };
     }
@@ -86,6 +98,8 @@ export function createMcpServer(options: McpServerOptions): Server {
         params: args || {},
         success: true,
         duration: Date.now() - startTime,
+        requestBytes: byteSize(args || {}),
+        responseBytes: byteSize(text),
       });
 
       return {
@@ -93,6 +107,7 @@ export function createMcpServer(options: McpServerOptions): Server {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const errorText = `Error: ${message}`;
 
       toolCallLogger.log({
         timestamp: new Date(),
@@ -102,10 +117,12 @@ export function createMcpServer(options: McpServerOptions): Server {
         success: false,
         error: message,
         duration: Date.now() - startTime,
+        requestBytes: byteSize(args || {}),
+        responseBytes: byteSize(errorText),
       });
 
       return {
-        content: [{ type: 'text', text: `Error: ${message}` }],
+        content: [{ type: 'text', text: errorText }],
         isError: true,
       };
     }
